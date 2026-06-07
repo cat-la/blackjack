@@ -170,7 +170,7 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
 <header>
     <!-- 更新了 H1，加入新手教學按鈕 -->
     <h1>21點實戰與特訓營 <span class="guide-btn" onclick="openGuide()">[新手教學]</span></h1>
-    <p style="color: #ccc; font-size: 0.85rem;">模擬 CSM 8副牌洗牌機｜全新 S17 規則完整版｜DO-RE-MI 升降音階音效</p>
+    <p style="color: #ccc; font-size: 0.85rem;"> CSM洗牌機 8副牌｜軟17｜遲降｜DAS｜BJ 3:2 </p>
 </header>
 <div class="main-layout" id="main-grid">
     <div class="mode-column">
@@ -697,9 +697,10 @@ function handleAction(choice) {
         currentHand.cards.push(drawCardFromCSM());
         const a = getHandAnalysis(currentHand);
         
-        if (!a.isSoft && a.sum >= 17) {
+        if (a.sum >= 21) {
             if (a.sum > 21) triggeredBust = true;
-            currentHand.isDone = true; moveToNextHand();
+            currentHand.isDone = true;
+	    moveToNextHand();
         } else if (a.sum === 21) { currentHand.isDone = true; moveToNextHand(); }
     } else if (choice === 'S') {
         currentHand.isDone = true; moveToNextHand();
@@ -830,6 +831,20 @@ document.addEventListener('keydown', function(e) {
     if (modal && modal.style.display === 'flex') return;
 
     const key = e.key.toLowerCase();
+
+    // ======== 修正 BUG：獨立攔截空白鍵 ========
+    if (key === ' ') {
+        // 永遠阻止空白鍵的預設行為（防止誤觸發留有焦點的按鈕，或造成畫面捲動）
+        e.preventDefault(); 
+        
+        // 嚴格限制：只有在「回合已完全結束」的狀態下，空白鍵才能觸發發牌
+        if (isRoundOver) {
+            const btnNext = document.getElementById('btn-next');
+            if (btnNext) btnNext.click();
+        }
+        return; // 執行完畢直接中斷，不往下走
+    }
+    // =======================================
     
     const clickIfEnabled = (id) => {
         const btn = document.getElementById(id);
@@ -843,13 +858,6 @@ document.addEventListener('keydown', function(e) {
     else if (key === 'd') clickIfEnabled('btn-double');
     else if (key === 'f') clickIfEnabled('btn-split');
     else if (key === 'g') clickIfEnabled('btn-surrender');
-    else if (key === ' ') {
-        const btnNext = document.getElementById('btn-next');
-        if (btnNext && btnNext.style.display !== 'none') {
-            e.preventDefault(); 
-            btnNext.click();
-        }
-    }
 });
 </script>
 </body>
