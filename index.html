@@ -11,7 +11,7 @@ body { background: radial-gradient(circle, var(--casino-green) 0%, var(--felt-da
 header { text-align: center; margin-bottom: 20px; width: 100%; }
 h1 { font-size: 1.8rem; color: var(--gold); margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
-/* ======== 新增：新手教學按鈕樣式 ======== */
+/* ======== 新手教學按鈕樣式 ======== */
 .guide-btn {
     font-size: 0.5em; /* 一半高的字體 */
     color: #81c784;
@@ -105,7 +105,7 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
 }
 .flash-accuracy { animation: flashAccuracyText 0.4s ease-in-out 3; display: inline-block; }
 
-/* ======== 新增：彈出視窗 (Modal) 樣式 ======== */
+/* ======== 彈出視窗 (Modal) 樣式 ======== */
 .modal-overlay {
     display: none; 
     position: fixed;
@@ -168,7 +168,6 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
 </head>
 <body>
 <header>
-    <!-- 更新了 H1，加入新手教學按鈕 -->
     <h1>21點實戰與特訓營 <span class="guide-btn" onclick="openGuide()">[新手教學]</span></h1>
     <p style="color: #ccc; font-size: 0.85rem;"> CSM洗牌機 8副牌｜軟17｜遲降｜DAS｜BJ 3:2 </p>
 </header>
@@ -180,11 +179,20 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
         <button id="mode-3" class="btn-mode" onclick="clickChangeMode(3)">加倍特訓</button>
         <button id="mode-4" class="btn-mode" onclick="clickChangeMode(4)">軟牌特訓</button>
 
-        <!-- 新增：介於特訓與實戰專區之間的註解 -->
         <div class="mode-notice">[訓練時將自動開始下一局]</div>
 
         <div class="mode-title" style="margin-top:15px;">💰 實戰專區</div>
         <button id="mode-5" class="btn-mode btn-real" onclick="clickChangeMode(5)">實戰模式</button>
+
+        <!-- ======== 新增：顯示手牌點數開關 ======== -->
+        <div class="toggle-container" style="margin-top: 15px; justify-content: center; width: 100%;">
+            <label class="switch">
+                <input type="checkbox" id="point-toggle" onchange="updateUI()" checked>
+                <span class="slider"></span>
+            </label>
+            <span style="font-size: 0.85rem;">顯示手牌點數</span>
+        </div>
+        <!-- ======================================= -->
     </div>
     
     <div class="game-column">
@@ -279,7 +287,7 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
     </div>
 </div>
 
-<!-- ======== 新增：新手教學彈出視窗 ======== -->
+<!-- ======== 新手教學彈出視窗 ======== -->
 <div id="guide-modal" class="modal-overlay" onclick="closeGuide(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <span class="close-modal" onclick="closeGuide()">&times;</span>
@@ -757,6 +765,9 @@ function updateUI() {
     const container = document.getElementById('player-hands-container');
     container.innerHTML = "";
     
+    // ======== 新增：取得點數顯示開關狀態 ========
+    const showPoints = document.getElementById('point-toggle').checked;
+    
     playerHands.forEach((hand, idx) => {
         const val = getHandAnalysis(hand);
         const isActive = (idx === currentHandIndex && !isRoundOver);
@@ -767,6 +778,20 @@ function updateUI() {
         else if (val.isSoft && val.sum < 21) txt = `軟 ${val.sum} 點`;
         if (!isBJ && val.sum > 21) txt = `爆牌 (${val.sum})`;
         if (hand.isSurrendered) txt = "已投降";
+
+        // 如果關閉了點數顯示，就將一般點數隱藏
+        if (!showPoints) {
+            if (isBJ) {
+                txt = "Blackjack!";
+            } else if (hand.isSurrendered) {
+                txt = "已投降";
+            } else if (val.sum > 21) {
+                txt = "爆牌！"; // 隱藏具體爆了多少點，模擬賭場氛圍
+            } else {
+                txt = "* * * *"; 
+            }
+        }
+        // =======================================
 
         const box = document.createElement('div');
         box.className = `player-hand-box ${isActive ? 'active' : ''}`;
@@ -810,7 +835,7 @@ function updateUI() {
     }
 }
 
-// ======== 新增：新手教學彈窗控制函式 ========
+// ======== 新手教學彈窗控制函式 ========
 function openGuide() {
     const modal = document.getElementById('guide-modal');
     modal.style.display = 'flex';
@@ -836,7 +861,7 @@ document.addEventListener('keydown', function(e) {
 
     const key = e.key.toLowerCase();
 
-    // ======== 修正 BUG：獨立攔截空白鍵 ========
+    // 獨立攔截空白鍵
     if (key === ' ') {
         // 永遠阻止空白鍵的預設行為（防止誤觸發留有焦點的按鈕，或造成畫面捲動）
         e.preventDefault(); 
@@ -848,7 +873,6 @@ document.addEventListener('keydown', function(e) {
         }
         return; // 執行完畢直接中斷，不往下走
     }
-    // =======================================
     
     const clickIfEnabled = (id) => {
         const btn = document.getElementById(id);
