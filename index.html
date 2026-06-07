@@ -9,7 +9,27 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
 body { background: radial-gradient(circle, var(--casino-green) 0%, var(--felt-dark) 100%); color: white; min-height: 100vh; padding: 15px; display: flex; flex-direction: column; align-items: center; }
 header { text-align: center; margin-bottom: 20px; width: 100%; }
-h1 { font-size: 1.8rem; color: var(--gold); margin-bottom: 5px; }
+h1 { font-size: 1.8rem; color: var(--gold); margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+/* ======== 新增：新手教學按鈕樣式 ======== */
+.guide-btn {
+    font-size: 0.5em; /* 一半高的字體 */
+    color: #81c784;
+    cursor: pointer;
+    border: 1px solid #81c784;
+    border-radius: 4px;
+    padding: 2px 6px;
+    transition: all 0.2s;
+    background: rgba(129, 199, 132, 0.1);
+}
+.guide-btn:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+    background: rgba(255, 215, 0, 0.15);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+/* ======================================= */
+
 .main-layout { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; max-width: 1600px; }
 @media (min-width: 1150px) { 
     .main-layout { grid-template-columns: 220px 1.15fr 80px 420px; align-items: start; } 
@@ -19,7 +39,8 @@ h1 { font-size: 1.8rem; color: var(--gold); margin-bottom: 5px; }
 .mode-title { font-size: 1rem; color: var(--gold); font-weight: bold; text-align: center; margin-bottom: 5px; width: 100%; }
 .btn-mode { background: #455a64; color: #eceff1; border: 2px solid transparent; padding: 12px 5px; font-size: 0.95rem; font-weight: bold; width: 100%; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
 .btn-mode.active { border-color: var(--gold); background: #263238; color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
-.btn-real { background: #37474f; color: #ffd54f; border: 1px solid #ffb300; }
+.btn-real { background: #37474f; color: #eceff1; border: 2px solid transparent; }
+.btn-real:not(.active) { border: 2px solid rgba(255, 179, 0, 0.15); }
 .game-column { display: flex; flex-direction: column; align-items: center; width: 100%; }
 .scoreboard { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--gold); border-radius: 10px; padding: 10px 15px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 8px; width: 100%; max-width: 650px; margin-bottom: 15px; font-size: 0.95rem; }
 .score-item span { font-weight: bold; color: var(--gold); }
@@ -40,12 +61,9 @@ h1 { font-size: 1.8rem; color: var(--gold); margin-bottom: 5px; }
 .controls-area button:disabled { opacity: 0.2; cursor: not-allowed; box-shadow: none; }
 .btn-hit { background-color: var(--btn-hit-color) !important; } .btn-stand { background-color: var(--btn-stand-color) !important; } .btn-double { background-color: var(--btn-double-color) !important; } .btn-split { background-color: var(--btn-split-color) !important; } .btn-surrender { background-color: var(--btn-surrender-color) !important; } 
 .btn-next { grid-column: span 5; background-color: #2196F3 !important; font-size: 1.3rem; padding: 18px 5px; margin-top: 10px; display: block; }
-
-/* 鍵盤提示標籤樣式 */
 .key-hint { position: absolute; top: 4px; left: 4px; font-size: 0.7rem; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; line-height: 1; font-weight: normal; }
 .btn-next .key-hint { top: 6px; left: 8px; font-size: 0.85rem; }
 
-/* 籌碼區塊樣式 */
 .chip-column { display: flex; flex-direction: column; align-items: center; gap: 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px 5px; }
 .current-bet-display { color: var(--gold); font-weight: bold; text-align: center; font-size: 1rem; margin-bottom: 5px; }
 .chip { width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: inset 0 0 5px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3); border: 4px dashed rgba(255,255,255,0.6); transition: transform 0.1s; user-select: none; }
@@ -75,37 +93,83 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
 .legend { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 0.75rem; }
 .legend-item { display: flex; align-items: center; gap: 4px; } .legend-color { width: 12px; height: 12px; border-radius: 3px; }
 
-/* ======== 新增：閃爍動畫效果 ======== */
 @keyframes flashCorrectBtn {
     0%, 100% { box-shadow: 0 4px 6px rgba(0,0,0,0.2); filter: brightness(1); transform: scale(1); }
     50% { box-shadow: 0 0 25px #fff; border: 2px solid #fff; filter: brightness(1.4); transform: scale(1.08); z-index: 10; }
 }
-.flash-correct-btn {
-    animation: flashCorrectBtn 0.4s ease-in-out 3; 
-}
+.flash-correct-btn { animation: flashCorrectBtn 0.4s ease-in-out 3; }
 
 @keyframes flashAccuracyText {
     0%, 100% { color: var(--gold); transform: scale(1); }
     50% { color: var(--wrong-red); transform: scale(1.3); text-shadow: 0 0 10px rgba(244, 67, 54, 0.8); }
 }
-.flash-accuracy {
-    animation: flashAccuracyText 0.4s ease-in-out 3;
-    display: inline-block;
-}
-/* ================================== */
+.flash-accuracy { animation: flashAccuracyText 0.4s ease-in-out 3; display: inline-block; }
 
-/* 針對行動裝置優化籌碼排列 */
+/* ======== 新增：彈出視窗 (Modal) 樣式 ======== */
+.modal-overlay {
+    display: none; 
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(3px);
+}
+.modal-overlay.show { display: flex; opacity: 1; }
+.modal-content {
+    background: var(--felt-dark);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    padding: 30px 25px;
+    color: white;
+    position: relative;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+    transform: translateY(-20px) scale(0.95);
+    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    max-height: 85vh;
+    overflow-y: auto;
+}
+.modal-overlay.show .modal-content { transform: translateY(0) scale(1); }
+.close-modal {
+    position: absolute;
+    top: 15px; right: 20px;
+    font-size: 2rem;
+    color: #aaa;
+    cursor: pointer;
+    transition: color 0.2s;
+    line-height: 1;
+}
+.close-modal:hover { color: var(--wrong-red); }
+.modal-content h2 { color: var(--gold); text-align: center; margin-bottom: 20px; font-size: 1.6rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.modal-content h3 { color: #81c784; margin-top: 20px; margin-bottom: 10px; font-size: 1.15rem; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 5px; }
+.modal-content ul { list-style-type: none; margin-bottom: 15px; }
+.modal-content li { margin-bottom: 12px; font-size: 0.95rem; line-height: 1.6; color: #e0e0e0; padding-left: 15px; position: relative; }
+.modal-content li::before { content: "►"; color: var(--gold); position: absolute; left: 0; top: 1px; font-size: 0.8rem; }
+.modal-content li strong { color: var(--gold); font-size: 1.05rem; }
+/* ======================================= */
+
 @media (max-width: 1149px) { 
     .chip-column { flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 650px; padding: 10px; margin-bottom: 15px; } 
     .current-bet-display { margin-bottom: 0; margin-right: 15px; display: flex; align-items: center; gap: 10px; }
     .current-bet-display br { display: none; }
 }
-@media (max-width: 480px) { .controls-area button { font-size: 0.82rem; padding: 12px 1px; } .chart-column { min-width: 100%; } table.strategy-matrix { font-size: 0.7rem; } }
+@media (max-width: 480px) { 
+    .controls-area button { font-size: 0.82rem; padding: 12px 1px; } 
+    .chart-column { min-width: 100%; } 
+    table.strategy-matrix { font-size: 0.7rem; } 
+    h1 { flex-direction: column; gap: 5px; }
+}
 </style>
 </head>
 <body>
 <header>
-    <h1>21點實戰與特訓營</h1>
+    <!-- 更新了 H1，加入新手教學按鈕 -->
+    <h1>21點實戰與特訓營 <span class="guide-btn" onclick="openGuide()">[新手教學]</span></h1>
     <p style="color: #ccc; font-size: 0.85rem;">模擬 CSM 8副牌洗牌機｜全新 S17 規則完整版｜DO-RE-MI 升降音階音效</p>
 </header>
 <div class="main-layout" id="main-grid">
@@ -208,7 +272,36 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
                 <div class="legend-item"><div class="legend-color cell-ur"></div>SUR=投降</div>
             </div>
         </div>
-    </div></div>
+    </div>
+</div>
+
+<!-- ======== 新增：新手教學彈出視窗 ======== -->
+<div id="guide-modal" class="modal-overlay" onclick="closeGuide(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="close-modal" onclick="closeGuide()">&times;</span>
+        <h2>21點 核心遊戲規則 🃏</h2>
+        
+        <h3>1. 勝負與平手</h3>
+        <ul>
+            <li><strong>玩家爆牌（Bust）：</strong>如果你的點數超過 21 點，你就立刻輸了（即使後面莊家也超過 21 點，依然算你輸）。</li>
+            <li><strong>平手（Push）：</strong>你與莊家點數相同，拿回原本的賭注。</li>
+            <li><strong>莊家規則：</strong>莊家點數不足 17 點時，必須強制要牌；達到 17 點或以上時，必須強制停牌。</li>
+        </ul>
+
+        <h3>2. 特殊牌型</h3>
+        <ul>
+            <li><strong>王牌 A：</strong>可以當作 1 點 或 11 點。</li>
+            <li><strong>Blackjack（天然21點）：</strong>若起手兩張牌為一張 A + 一張 10點（10、J、Q、K），即為 Blackjack！可直接贏得 1.5 倍 獎金（賠率 3:2），除非莊家也是 Blackjack。</li>
+        </ul>
+
+        <h3>3. 玩家特殊行動</h3>
+        <ul>
+            <li><strong>加倍下注（Double Down）：</strong>若覺得局勢大好（例如手上是 10 點或 11 點），可加倍原本賭注，但代價是強制只能再拿一張牌。</li>
+            <li><strong>分牌（Split）：</strong>若前兩張拿到一對相同的牌（例如兩張 8 或兩張 10），可投入同等賭注，將它們拆成兩手牌分開玩。</li>
+        </ul>
+    </div>
+</div>
+<!-- ======================================= -->
 
 <script>
 let bankroll = 10000;
@@ -553,16 +646,13 @@ function handleAction(choice) {
     if (!isCorrect) {
         playWrongSound(); 
         
-        // ======== 新增：觸發正確率閃爍動畫 ========
         const accuracyEl = document.getElementById('accuracy');
-        // 先預先計算並填入新的正確率數字
         accuracyEl.innerText = Math.round((correct / total) * 100) + "%";
         accuracyEl.classList.remove('flash-accuracy');
-        void accuracyEl.offsetWidth; // 觸發重繪
+        void accuracyEl.offsetWidth; 
         accuracyEl.classList.add('flash-accuracy');
         setTimeout(() => accuracyEl.classList.remove('flash-accuracy'), 1200);
 
-        // ======== 新增：觸發正確按鈕閃爍動畫 ========
         let btnIdsToFlash = [];
         if (correctAns === 'H') btnIdsToFlash.push('btn-hit');
         else if (correctAns === 'S') btnIdsToFlash.push('btn-stand');
@@ -573,20 +663,18 @@ function handleAction(choice) {
 
         btnIdsToFlash.forEach(id => {
             const btn = document.getElementById(id);
-            if (btn && !btn.disabled) { // 確保按鈕可用才閃爍
+            if (btn && !btn.disabled) { 
                 btn.classList.remove('flash-correct-btn');
-                void btn.offsetWidth; // 觸發重繪
+                void btn.offsetWidth; 
                 btn.classList.add('flash-correct-btn');
                 setTimeout(() => btn.classList.remove('flash-correct-btn'), 1200);
             }
         });
-        // ===========================================
 
         if (currentTrainingMode !== 5) {
             fb.style.background = "rgba(244,67,54,0.2)"; fb.style.color = "#ef9a9a";
             fb.innerText = `選擇錯誤！標準策略為【${map[correctAns]}】。請重新選擇！`;
             document.getElementById('total-count').innerText = total;
-            // 正確率更新已移至上面動畫邏輯內
             return; 
         } else {
             fb.style.background = "rgba(244,67,54,0.2)"; fb.style.color = "#ef9a9a";
@@ -709,7 +797,6 @@ function updateUI() {
         if (currentTrainingMode === 5 && bankroll < cur.bet) canSplit = false;
         document.getElementById('btn-split').disabled = !canSplit;
         
-        // 莊家為A時禁止投降
         let canSurrender = (cur.cards.length === 2 && playerHands.length === 1);
         if (dealerCard && dealerCard.d === 'A') {
             canSurrender = false;
@@ -718,11 +805,32 @@ function updateUI() {
     }
 }
 
-// 鍵盤操作監聽器
+// ======== 新增：新手教學彈窗控制函式 ========
+function openGuide() {
+    const modal = document.getElementById('guide-modal');
+    modal.style.display = 'flex';
+    // 觸發重繪以啟用動畫
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
+}
+
+function closeGuide(event) {
+    const modal = document.getElementById('guide-modal');
+    modal.classList.remove('show');
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300); // 配合 CSS 動畫時間
+}
+// =======================================
+
 document.addEventListener('keydown', function(e) {
+    // 若正在顯示彈出視窗，則不處理遊戲快捷鍵
+    const modal = document.getElementById('guide-modal');
+    if (modal && modal.style.display === 'flex') return;
+
     const key = e.key.toLowerCase();
     
-    // 輔助函式：確保按鈕存在且處於啟用狀態才執行點擊
     const clickIfEnabled = (id) => {
         const btn = document.getElementById(id);
         if (btn && !btn.disabled && btn.style.display !== 'none') {
@@ -738,7 +846,7 @@ document.addEventListener('keydown', function(e) {
     else if (key === ' ') {
         const btnNext = document.getElementById('btn-next');
         if (btnNext && btnNext.style.display !== 'none') {
-            e.preventDefault(); // 防止按下空白鍵時畫面自動往下捲動
+            e.preventDefault(); 
             btnNext.click();
         }
     }
