@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>21點實戰與特訓營-S17終極音效版</title>
+<style>
+:root { --casino-green: #0e633a; --felt-dark: #084225; --gold: #ffd700; --card-white: #ffffff; --correct-blue: #2196F3; --wrong-red: #f44336; --btn-hit-color: #4caf50; --btn-stand-color: #f44336; --btn-double-color: #ff9800; --btn-split-color: #9c27b0; --btn-surrender-color: #e06666; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+body { background: radial-gradient(circle, var(--casino-green) 0%, var(--felt-dark) 100%); color: white; min-height: 100vh; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+header { text-align: center; margin-bottom: 20px; width: 100%; }
+h1 { font-size: 1.8rem; color: var(--gold); margin-bottom: 5px; }
+.main-layout { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; max-width: 1600px; }
+@media (min-width: 1150px) { 
+    .main-layout { grid-template-columns: 220px 1.15fr 80px 420px; align-items: start; } 
+    .main-layout.hide-chart { grid-template-columns: 220px 1fr 80px 0px; } 
+}
+.mode-column { display: flex; flex-direction: column; gap: 10px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; }
+.mode-title { font-size: 1rem; color: var(--gold); font-weight: bold; text-align: center; margin-bottom: 5px; width: 100%; }
+.btn-mode { background: #455a64; color: #eceff1; border: 2px solid transparent; padding: 12px 5px; font-size: 0.95rem; font-weight: bold; width: 100%; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.btn-mode.active { border-color: var(--gold); background: #263238; color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+.btn-real { background: #37474f; color: #ffd54f; border: 1px solid #ffb300; }
+.game-column { display: flex; flex-direction: column; align-items: center; width: 100%; }
+.scoreboard { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--gold); border-radius: 10px; padding: 10px 15px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 8px; width: 100%; max-width: 650px; margin-bottom: 15px; font-size: 0.95rem; }
+.score-item span { font-weight: bold; color: var(--gold); }
+.feedback-box { min-height: 55px; width: 100%; max-width: 650px; display: flex; justify-content: center; align-items: center; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-size: 1.1rem; text-align: center; padding: 5px 15px; background: rgba(255,255,255,0.1); color: #ddd; transition: all 0.2s; }
+.table-area { width: 100%; max-width: 650px; display: flex; flex-direction: column; gap: 20px; }
+.hand-section { border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; position: relative; text-align: center; min-height: 140px; }
+.section-title { position: absolute; top: -10px; left: 20px; background: #084225; padding: 0 10px; font-size: 0.85rem; color: #ccc; }
+.player-hands-container { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; width: 100%; }
+.player-hand-box { flex: 1; min-width: 140px; border: 2px solid transparent; background: rgba(255,255,255,0.02); border-radius: 8px; padding: 10px; }
+.player-hand-box.active { border-color: var(--gold); background: rgba(255, 215, 0, 0.05); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
+.cards-display { display: flex; justify-content: center; gap: 8px; min-height: 100px; align-items: center; margin-top: 5px; }
+.card { width: 65px; height: 95px; background: var(--card-white); border-radius: 6px; color: black; display: flex; flex-direction: column; justify-content: space-between; padding: 5px; font-weight: bold; font-size: 1.2rem; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
+.card.red { color: #d32f2f; }
+.card .card-suit { font-size: 1.4rem; text-align: right; line-height: 1; }
+.card-back { background: repeating-linear-gradient(45deg, #b0bec5, #b0bec5 10px, #90a4ae 10px, #90a4ae 20px); }
+.controls-area { width: 100%; max-width: 650px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 20px; }
+.controls-area button { position: relative; padding: 15px 2px; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+.controls-area button:disabled { opacity: 0.2; cursor: not-allowed; box-shadow: none; }
+.btn-hit { background-color: var(--btn-hit-color) !important; } .btn-stand { background-color: var(--btn-stand-color) !important; } .btn-double { background-color: var(--btn-double-color) !important; } .btn-split { background-color: var(--btn-split-color) !important; } .btn-surrender { background-color: var(--btn-surrender-color) !important; } 
+.btn-next { grid-column: span 5; background-color: #2196F3 !important; font-size: 1.3rem; padding: 18px 5px; margin-top: 10px; display: block; }
+
+/* 鍵盤提示標籤樣式 */
+.key-hint { position: absolute; top: 4px; left: 4px; font-size: 0.7rem; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; line-height: 1; font-weight: normal; }
+.btn-next .key-hint { top: 6px; left: 8px; font-size: 0.85rem; }
+
+/* 籌碼區塊樣式 */
+.chip-column { display: flex; flex-direction: column; align-items: center; gap: 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px 5px; }
+.current-bet-display { color: var(--gold); font-weight: bold; text-align: center; font-size: 1rem; margin-bottom: 5px; }
+.chip { width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: inset 0 0 5px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3); border: 4px dashed rgba(255,255,255,0.6); transition: transform 0.1s; user-select: none; }
+.chip:active { transform: scale(0.9); }
+.chip-0 { background-color: #757575; border-style: solid; border-color: #bdbdbd; box-shadow: 0 4px 6px rgba(0,0,0,0.3); } 
+.chip-10 { background-color: #1976D2; } 
+.chip-50 { background-color: #388E3C; } 
+.chip-100 { background-color: #212121; color: #fff; border-color: #FFD700; }
+
+.chart-column { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 12px; min-width: 430px; max-width: 500px; width: 100%; }
+.chart-header-area { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.15); }
+.chart-fold-wrapper { max-height: 900px; transition: max-height 0.4s ease, opacity 0.3s ease; opacity: 1; margin-top: 12px; overflow: hidden; }
+.hide-table-content .chart-fold-wrapper { max-height: 0px !important; opacity: 0 !important; margin-top: 0px !important; }
+.chart-title { font-size: 0.95rem; color: var(--gold); font-weight: bold; text-align: right; flex-grow: 1; }
+.toggle-container { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: bold; color: #ccc; user-select: none; }
+.switch { position: relative; display: inline-block; width: 40px; height: 22px; } .switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #455a64; transition: .3s; border-radius: 22px; }
+.slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--btn-hit-color); } input:checked + .slider:before { transform: translateX(18px); }
+table.strategy-matrix { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; font-weight: bold; color: white; }
+table.strategy-matrix th, table.strategy-matrix td { padding: 5px 1px; border: 1px solid rgba(255,255,255,0.1); }
+table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 0.8rem; }
+.row-header { background: rgba(0,0,0,0.4); color: var(--gold); width: 40px; }
+.section-divider { background: rgba(255,255,255,0.08) !important; color: var(--gold); text-align: left; padding-left: 10px !important; font-size: 0.8rem; }
+.cell-h { background-color: rgba(76, 175, 80, 0.85); } .cell-s { background-color: rgba(33, 150, 243, 0.85); }
+.cell-d { background-color: rgba(255, 152, 0, 0.85); } .cell-p { background-color: rgba(156, 39, 176, 0.85); } .cell-ur { background-color: rgba(204, 17, 17, 0.85); }
+.legend { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 0.75rem; }
+.legend-item { display: flex; align-items: center; gap: 4px; } .legend-color { width: 12px; height: 12px; border-radius: 3px; }
+
+/* 針對行動裝置優化籌碼排列 */
+@media (max-width: 1149px) { 
+    .chip-column { flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 650px; padding: 10px; margin-bottom: 15px; } 
+    .current-bet-display { margin-bottom: 0; margin-right: 15px; display: flex; align-items: center; gap: 10px; }
+    .current-bet-display br { display: none; }
+}
+@media (max-width: 480px) { .controls-area button { font-size: 0.82rem; padding: 12px 1px; } .chart-column { min-width: 100%; } table.strategy-matrix { font-size: 0.7rem; } }
+</style>
+</head>
+<body>
+<header>
+    <h1>21點實戰與特訓營</h1>
+    <p style="color: #ccc; font-size: 0.85rem;">模擬 CSM 8副牌洗牌機｜全新 S17 規則完整版｜DO-RE-MI 升降音階音效</p>
+</header>
+<div class="main-layout" id="main-grid">
+    <div class="mode-column">
+        <div class="mode-title">🎯 特訓專區</div>
+        <button id="mode-1" class="btn-mode active" onclick="clickChangeMode(1)">普通模式</button>
+        <button id="mode-2" class="btn-mode" onclick="clickChangeMode(2)">分牌特訓</button>
+        <button id="mode-3" class="btn-mode" onclick="clickChangeMode(3)">加倍特訓</button>
+        <button id="mode-4" class="btn-mode" onclick="clickChangeMode(4)">軟牌特訓</button>
+        <div class="mode-title" style="margin-top:15px;">💰 實戰專區</div>
+        <button id="mode-5" class="btn-mode btn-real" onclick="clickChangeMode(5)">實戰模式</button>
+    </div>
+    
+    <div class="game-column">
+        <div class="scoreboard">
+            <div class="score-item" style="color:white;">本金: $<span id="bankroll">10000</span></div>
+            <div class="score-item">測驗: <span id="total-count">0</span></div>
+            <div class="score-item">答對: <span id="correct-count">0</span></div>
+            <div class="score-item">正確率: <span id="accuracy">0%</span></div>
+        </div>
+        <div id="feedback" class="feedback-box">模式已就緒，請點擊下方大按鈕開始發牌！</div>
+        <div class="table-area">
+            <div class="hand-section">
+                <div class="section-title">莊家明牌</div>
+                <div class="cards-display" id="dealer-cards"></div>
+            </div>
+            <div class="hand-section">
+                <div class="section-title">玩家手牌</div>
+                <div class="player-hands-container" id="player-hands-container"></div>
+            </div>
+        </div>
+        <div class="controls-area">
+            <button id="btn-hit" class="btn-hit" onclick="handleAction('H')" disabled><span class="key-hint">A</span>要牌<br>(Hit)</button>
+            <button id="btn-stand" class="btn-stand" onclick="handleAction('S')" disabled><span class="key-hint">S</span>停牌<br>(Stand)</button>
+            <button id="btn-double" class="btn-double" onclick="handleAction('D')" disabled><span class="key-hint">D</span>翻倍<br>(Double)</button>
+            <button id="btn-split" class="btn-split" onclick="handleAction('P')" disabled><span class="key-hint">F</span>分牌<br>(Split)</button>
+            <button id="btn-surrender" class="btn-surrender" onclick="handleAction('UR')" disabled><span class="key-hint">G</span>投降<br>(Surrender)</button>
+            <button id="btn-next" class="btn-next" onclick="nextRound()"><span class="key-hint">空白鍵</span>點擊發牌開始遊戲</button>
+        </div>
+    </div>
+
+    <div class="chip-column">
+        <div class="current-bet-display">
+            目前下注<br>$<span id="current-bet-amt">100</span>
+        </div>
+        <div class="chip chip-100" onclick="addBet(100)">100</div>
+        <div class="chip chip-50" onclick="addBet(50)">50</div>
+        <div class="chip chip-10" onclick="addBet(10)">10</div>
+        <div class="chip chip-0" onclick="addBet(0)">0</div>
+    </div>
+
+    <div class="chart-column" id="chart-panel">
+        <div class="chart-header-area">
+            <div class="toggle-container">
+                <label class="switch"><input type="checkbox" id="chart-toggle" onchange="toggleChart()" checked><span class="slider"></span></label>
+                <span id="toggle-text">隱藏圖表</span>
+            </div>
+            <div class="chart-title">8副牌標準策略 (S17變體)</div>
+        </div>
+        <div class="chart-fold-wrapper">
+            <table class="strategy-matrix">
+                <thead><tr><th>閒家</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>A</th></tr></thead>
+                <tbody>
+                    <tr><td colspan="11" class="section-divider">一對 / 分牌策略 (Pairs)</td></tr>
+                    <tr><td class="row-header">A,A</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td></tr>
+                    <tr><td class="row-header">10,10</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td></tr>
+                    <tr><td class="row-header">9,9</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-s">S</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-s">S</td><td class="cell-s">S</td></tr>
+                    <tr><td class="row-header">8,8</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-ur">SUR</td><td class="cell-p">P</td></tr>
+                    <tr><td class="row-header">7,7</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">6,6</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">5,5</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">4,4</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">3,3</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">2,2</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-p">P</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td colspan="11" class="section-divider">軟牌策略 (Soft Totals)</td></tr>
+                    <tr><td class="row-header">A,9</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td></tr>
+                    <tr><td class="row-header">A,8</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td></tr> 
+                    <tr><td class="row-header">A,7</td><td class="cell-s">S</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">A,6</td><td class="cell-h">H</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">A,5</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">A,4</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">A,3</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">A,2</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td colspan="11" class="section-divider">硬牌策略 (Hard Totals)</td></tr>
+                    <tr><td class="row-header">16</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-ur">SUR</td><td class="cell-ur">SUR</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">15</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-ur">SUR</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">14-13</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">12</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-s">S</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">11</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td></tr>
+                    <tr><td class="row-header">10</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">9</td><td class="cell-h">H</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-d">D</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                    <tr><td class="row-header">8</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td><td class="cell-h">H</td></tr>
+                </tbody>
+            </table>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-color cell-h"></div>H=要牌</div>
+                <div class="legend-item"><div class="legend-color cell-s"></div>S=停牌</div>
+                <div class="legend-item"><div class="legend-color cell-d"></div>D=翻倍</div>
+                <div class="legend-item"><div class="legend-color cell-p"></div>P=分牌</div>
+                <div class="legend-item"><div class="legend-color cell-ur"></div>SUR=投降</div>
+            </div>
+        </div>
+    </div></div>
+
+<script>
+let bankroll = 10000;
+let betSize = 100;
+let total = 0, correct = 0;
+const suits = [{s:'♠',r:false},{s:'♥',r:true},{s:'♦',r:true},{s:'♣',r:false}];
+const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+
+let dealerHand = null, dealerCard = null; 
+let playerHands = [], currentHandIndex = 0, isRoundOver = true;
+let autoNextTimeout = null;
+let currentTrainingMode = 1;
+let audioCtx = null;
+
+function addBet(amount) {
+    if (amount === 0) {
+        betSize = 0;
+    } else {
+        betSize += amount;
+    }
+    document.getElementById('current-bet-amt').innerText = betSize;
+}
+
+function toggleChart() {
+    const isChecked = document.getElementById('chart-toggle').checked;
+    const panel = document.getElementById('chart-panel');
+    const txt = document.getElementById('toggle-text');
+    if (isChecked) { panel.classList.remove('hide-table-content'); txt.innerText = "隱藏圖表"; }
+    else { panel.classList.add('hide-table-content'); txt.innerText = "顯示圖表"; }
+}
+
+const masterDeck = [];
+function createMasterDeck() {
+    for (let i = 0; i < 8; i++) {
+        suits.forEach(s => {
+            values.forEach(v => {
+                let w = parseInt(v);
+                if (['J','Q','K'].includes(v)) w = 10;
+                if (v === 'A') w = 11;
+                masterDeck.push({ d: v, s: s.s, r: s.r, w: w });
+            });
+        });
+    }
+}
+createMasterDeck();
+function drawCardFromCSM() { return masterDeck[Math.floor(Math.random() * masterDeck.length)]; }
+
+function initAudio() {
+    try {
+        if (!audioCtx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) audioCtx = new AudioContext();
+        }
+    } catch (e) { console.error("音效初始化失敗", e); }
+}
+
+function playNote(freq, time, dur) {
+    if(!audioCtx) return;
+    try {
+        let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+        g.gain.setValueAtTime(0.1, time);
+        g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        osc.start(time); osc.stop(time + dur);
+    } catch(e) {}
+}
+
+function playWinSound() { 
+    initAudio(); if(!audioCtx) return;
+    let now = audioCtx.currentTime; 
+    playNote(523.25, now, 0.2); 
+    playNote(587.33, now+0.2, 0.2); 
+    playNote(659.25, now+0.4, 0.3); 
+}
+function playLoseSound() { 
+    initAudio(); if(!audioCtx) return;
+    let now = audioCtx.currentTime; 
+    playNote(659.25, now, 0.2); 
+    playNote(587.33, now+0.2, 0.2); 
+    playNote(523.25, now+0.4, 0.3); 
+}
+function playBJSound() { 
+    initAudio(); if(!audioCtx) return;
+    let now = audioCtx.currentTime; 
+    const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 1046.50]; 
+    notes.forEach((f, i) => playNote(f, now + i*0.08, 0.15)); 
+}
+function playWrongSound() {
+    initAudio(); if(!audioCtx) return;
+    try {
+        let now = audioCtx.currentTime;
+        let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(130.81, now);
+        g.gain.setValueAtTime(0.08, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.start(now); osc.stop(now + 0.3);
+    } catch(e){}
+}
+function playCorrectSound() {
+    initAudio(); if(!audioCtx) return;
+    try {
+        let now = audioCtx.currentTime;
+        let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now);
+        g.gain.setValueAtTime(0.1, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.1);
+        g.gain.setValueAtTime(0.1, now + 0.1);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.start(now); osc.stop(now + 0.4);
+    } catch(e){}
+}
+
+const strategyTable = {
+    pairs: {
+        'A':{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'P',9:'P',10:'P','A':'P'},'10':{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S','A':'S'},
+        '9':{2:'P',3:'P',4:'P',5:'P',6:'P',7:'S',8:'P',9:'P',10:'S','A':'S'},'8':{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'P',9:'P',10:'UR','A':'P'}, 
+        '7':{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'H',9:'H',10:'H','A':'H'},'6':{2:'P',3:'P',4:'P',5:'P',6:'P',7:'H',8:'H',9:'H',10:'H','A':'H'},
+        '5':{2:'D',3:'D',4:'D',5:'D',6:'D',7:'D',8:'D',9:'D',10:'H','A':'H'},'4':{2:'H',3:'H',4:'H',5:'P',6:'P',7:'H',8:'H',9:'H',10:'H','A':'H'},
+        '3':{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'H',9:'H',10:'H','A':'H'},'2':{2:'P',3:'P',4:'P',5:'P',6:'P',7:'P',8:'H',9:'H',10:'H','A':'H'}
+    },
+    soft: {
+        '9':{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S','A':'S'},
+        '8':{2:'S',3:'S',4:'S',5:'S',6:'S',7:'S',8:'S',9:'S',10:'S','A':'S'}, 
+        '7':{2:'DS',3:'D',4:'D',5:'D',6:'D',7:'S',8:'S',9:'H',10:'H','A':'H'},'6':{2:'H',3:'D',4:'D',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H','A':'H'},
+        '5':{2:'H',3:'H',4:'D',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H','A':'H'},'4':{2:'H',3:'H',4:'D',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H','A':'H'},
+        '3':{2:'H',3:'H',4:'H',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H','A':'H'},'2':{2:'H',3:'H',4:'H',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H','A':'H'}
+    },
+    hard: {
+        '16':{2:'S',3:'S',4:'S',5:'S',6:'S',7:'H',8:'H',9:'UR',10:'UR','A':'H'},'15':{2:'S',3:'S',4:'S',5:'S',6:'S',7:'H',8:'H',9:'H',10:'UR','A':'H'},   
+        '14':{2:'S',3:'S',4:'S',5:'S',6:'S',7:'H',8:'H',9:'H',10:'H','A':'H'},'13':{2:'S',3:'S',4:'S',5:'S',6:'S',7:'H',8:'H',9:'H',10:'H','A':'H'},
+        '12':{2:'H',3:'H',4:'S',5:'S',6:'S',7:'H',8:'H',9:'H',10:'H','A':'H'},'11':{2:'D',3:'D',4:'D',5:'D',6:'D',7:'D',8:'D',9:'D',10:'D','A':'D'},
+        '10':{2:'D',3:'D',4:'D',5:'D',6:'D',7:'D',8:'D',9:'D',10:'H','A':'H'},'9':{2:'H',3:'D',4:'D',5:'D',6:'D',7:'H',8:'H',9:'H',10:'H','A':'H'},
+        '8':{2:'H',3:'H',4:'H',5:'H',6:'H',7:'H',8:'H',9:'H',10:'H','A':'H'}
+    }
+};
+
+function clickChangeMode(modeNum) {
+    currentTrainingMode = modeNum;
+    document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
+    document.getElementById(`mode-${modeNum}`).classList.add('active');
+    nextRound(); 
+}
+
+function checkIsBlackjack(hand) {
+    if (hand.cards.length !== 2 || hand.isSplit) return false;
+    let hasAce = hand.cards.some(c => c.d === 'A');
+    let hasTen = hand.cards.some(c => ['10','J','Q','K'].includes(c.d));
+    return hasAce && hasTen;
+}
+
+function getHandAnalysis(hand) {
+    let sum = 0, aceCount = 0, cardValues = [];
+    hand.cards.forEach(c => { 
+        sum += c.w; 
+        if (c.d === 'A') aceCount++; 
+        let v = c.d; 
+        if (['J','Q','K'].includes(v)) v = '10'; 
+        cardValues.push(v); 
+    });
+    while (sum > 21 && aceCount > 0) { sum -= 10; aceCount--; }
+    const isPair = (hand.cards.length === 2 && cardValues[0] === cardValues[1]);
+    const isSoft = (aceCount > 0 && sum <= 21);
+    let otherCardIfSoft = isSoft ? (sum - 11).toString() : null; 
+    return { sum: sum, isPair: isPair, isSoft: isSoft, pairCard: isPair ? cardValues[0] : null, otherCardIfSoft: otherCardIfSoft };
+}
+
+function matchTrainingModeFilter(hand) {
+    if (currentTrainingMode === 5) return true; 
+    const analysis = getHandAnalysis(hand);
+    if (currentTrainingMode === 1) return checkIsBlackjack(hand) || (analysis.isSoft || analysis.sum < 17);
+    if (currentTrainingMode === 2) return (analysis.isPair && analysis.pairCard !== '10');
+    if (currentTrainingMode === 3) return (!analysis.isSoft && [9, 10, 11].includes(analysis.sum));
+    if (currentTrainingMode === 4) return (analysis.isSoft && !checkIsBlackjack(hand));
+    return true;
+}
+
+function nextRound() {
+    initAudio();
+    if (autoNextTimeout) clearTimeout(autoNextTimeout);
+
+    isRoundOver = false;
+    currentHandIndex = 0;
+
+    if (currentTrainingMode === 5) {
+        if (bankroll < betSize && betSize > 0) {
+            alert("本金不足！系統已為您重新發放 $10000 救援金。");
+            bankroll = 10000;
+        }
+        bankroll -= betSize;
+    }
+
+    let attempts = 0;
+    do {
+        dealerHand = { cards: [drawCardFromCSM(), drawCardFromCSM()] }; 
+        dealerCard = dealerHand.cards[0];
+        playerHands = [{ cards: [drawCardFromCSM(), drawCardFromCSM()], isDone: false, isSplit: false, bet: betSize, isSurrendered: false }];
+        attempts++;
+        if (attempts > 1200) break; 
+    } while (!matchTrainingModeFilter(playerHands[0]));
+
+    const fb = document.getElementById('feedback');
+    document.getElementById('btn-next').style.display = 'none';
+    
+    let pBJ = checkIsBlackjack(playerHands[0]);
+    let dBJ = checkIsBlackjack(dealerHand);
+
+    if (pBJ) {
+        total++; correct++; isRoundOver = true; playBJSound();
+        if (currentTrainingMode === 5) {
+            if (dBJ) { bankroll += betSize; fb.innerText = "雙方皆為 Blackjack，平手退注！"; } 
+            else { bankroll += betSize + (betSize * 1.5); fb.innerText = "★ 天胡 BLACKJACK ★ 贏得 1.5 倍獎金！"; }
+            document.getElementById('btn-next').style.display = 'block';
+            document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>點擊發牌開始下一局';
+        } else {
+            fb.style.background = "linear-gradient(90deg, #ff9800, #ffeb3b)"; fb.style.color = "#000";
+            fb.innerText = "★ 天胡 BLACKJACK ★ (1秒後自動下一局)";
+            autoNextTimeout = setTimeout(nextRound, 1000);
+        }
+        updateUI();
+        return;
+    }
+
+    if (currentTrainingMode === 5 && dBJ) {
+        isRoundOver = true; playLoseSound();
+        fb.style.background = "rgba(244,67,54,0.2)"; fb.style.color = "#ef9a9a";
+        fb.innerText = "莊家 Blackjack！你輸了這局。";
+        document.getElementById('btn-next').style.display = 'block';
+        document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>點擊發牌開始下一局';
+        updateUI();
+        return;
+    }
+
+    fb.style.background = "rgba(255,255,255,0.1)"; fb.style.color = "#ddd";
+    let modeNames = ["", "普通模式", "分牌特訓", "加倍特訓", "軟牌特訓", "實戰模式"];
+    fb.innerText = `🎯 當前：【${modeNames[currentTrainingMode]}】。請對照右表做出最佳策略選擇...`;
+    
+    updateUI();
+}
+
+function getCorrectAction(hand, dealerUpCard) {
+    const val = getHandAnalysis(hand);
+    const dKey = ['J','Q','K'].includes(dealerUpCard.d) ? '10' : dealerUpCard.d;
+    const isFirstTwoCards = (hand.cards.length === 2 && playerHands.length === 1); 
+
+    if (val.isPair && hand.cards.length === 2 && playerHands.length < 4) {
+        let ans = strategyTable.pairs[val.pairCard][dKey];
+        if (ans === 'UR') return isFirstTwoCards ? 'UR' : 'P'; 
+        if (ans) return ans;
+    }
+    if (val.isSoft) {
+        let other = val.otherCardIfSoft; if (parseInt(other) > 9) return 'S';
+        let ans = strategyTable.soft[other][dKey];
+        if (ans === 'D') return hand.cards.length === 2 ? 'D' : 'H';
+        if (ans === 'DS') return hand.cards.length === 2 ? 'D' : 'S';
+        return ans;
+    }
+    if (val.sum >= 17) return 'S'; if (val.sum <= 8) return 'H';
+    let ans = strategyTable.hard[val.sum.toString()][dKey];
+    
+    if (ans === 'UR') return isFirstTwoCards ? 'UR' : 'H';
+    if (ans === 'D') return hand.cards.length === 2 ? 'D' : 'H';
+    return ans;
+}
+
+function playDealerAndSettle() {
+    if (currentTrainingMode !== 5) {
+        document.getElementById('feedback').innerText += " (1秒後自動進入下一局)";
+        autoNextTimeout = setTimeout(nextRound, 1000);
+        updateUI(); return;
+    }
+
+    let allBustOrSurrender = true;
+    playerHands.forEach(h => {
+        if (getHandAnalysis(h).sum <= 21 && !h.isSurrendered) allBustOrSurrender = false;
+    });
+
+    if (!allBustOrSurrender) {
+        let dAnal = getHandAnalysis(dealerHand);
+        while (dAnal.sum < 17) {
+            dealerHand.cards.push(drawCardFromCSM());
+            dAnal = getHandAnalysis(dealerHand);
+        }
+    }
+
+    let dSum = getHandAnalysis(dealerHand).sum;
+    let netWin = 0;
+
+    playerHands.forEach(h => {
+        if (h.isSurrendered) { bankroll += h.bet / 2; netWin -= h.bet / 2; return; }
+        let pSum = getHandAnalysis(h).sum;
+        
+        if (pSum > 21) { 
+            netWin -= h.bet; 
+        } else if (dSum > 21 || pSum > dSum) { 
+            bankroll += h.bet * 2; netWin += h.bet; 
+        } else if (pSum === dSum) { 
+            bankroll += h.bet; 
+        } else { 
+            netWin -= h.bet; 
+        }
+    });
+
+    if (netWin > 0) playWinSound();
+    else if (netWin < 0) playLoseSound();
+
+    let fb = document.getElementById('feedback');
+    let dStr = dSum > 21 ? "莊家爆牌" : `莊家 ${dSum} 點`;
+    if (allBustOrSurrender && netWin < 0) dStr = "閒家全爆牌或投降";
+    
+    fb.style.background = netWin > 0 ? "rgba(76, 175, 80, 0.3)" : (netWin < 0 ? "rgba(244, 67, 54, 0.3)" : "rgba(255, 255, 255, 0.1)");
+    fb.style.color = "#fff";
+    fb.innerText = `${dStr} (S17)。本局總結算：${netWin > 0 ? '+'+netWin : netWin} 元`;
+    
+    document.getElementById('btn-next').style.display = 'block';
+    document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>點擊發牌開始下一局';
+    updateUI();
+}
+
+function moveToNextHand() {
+    currentHandIndex++;
+    while (currentHandIndex < playerHands.length && playerHands[currentHandIndex].isDone) { currentHandIndex++; }
+    if (currentHandIndex >= playerHands.length) { isRoundOver = true; playDealerAndSettle(); }
+}
+
+function handleAction(choice) {
+    if (isRoundOver) return;
+    initAudio(); 
+    const currentHand = playerHands[currentHandIndex];
+    let correctAns = getCorrectAction(currentHand, dealerCard);
+    let map = {'H':'要牌(Hit)','S':'停牌(Stand)','D':'翻倍(Double)','P':'分牌(Split)','UR':'投降(Surrender)','DS':'翻倍或停牌'};
+    let isCorrect = (choice === correctAns) || (correctAns === 'DS' && (choice === 'D' || choice === 'S'));
+
+    total++;
+    const fb = document.getElementById('feedback');
+    
+    if (!isCorrect) {
+        playWrongSound(); 
+        
+        if (currentTrainingMode !== 5) {
+            fb.style.background = "rgba(244,67,54,0.2)"; fb.style.color = "#ef9a9a";
+            fb.innerText = `選擇錯誤！標準策略為【${map[correctAns]}】。請重新選擇！`;
+            document.getElementById('total-count').innerText = total;
+            document.getElementById('accuracy').innerText = Math.round((correct / total) * 100) + "%";
+            return; 
+        } else {
+            fb.style.background = "rgba(244,67,54,0.2)"; fb.style.color = "#ef9a9a";
+            fb.innerText = `策略錯誤（標準應為 ${map[correctAns]}），遊戲繼續進行...`;
+        }
+    } else {
+        correct++;
+        if (currentTrainingMode !== 5) {
+            playCorrectSound();
+            fb.style.background = "rgba(33,140,243,0.2)"; fb.style.color = "#90caf9";
+            fb.innerText = `答對了！標準策略是【${map[correctAns]}】`;
+        }
+    }
+
+    let triggeredBust = false;
+
+    if (choice === 'UR') {
+        currentHand.isDone = true; currentHand.isSurrendered = true; moveToNextHand(); 
+    } else if (choice === 'H') {
+        currentHand.cards.push(drawCardFromCSM());
+        const a = getHandAnalysis(currentHand);
+        
+        if (!a.isSoft && a.sum >= 17) {
+            if (a.sum > 21) triggeredBust = true;
+            currentHand.isDone = true; moveToNextHand();
+        } else if (a.sum === 21) { currentHand.isDone = true; moveToNextHand(); }
+    } else if (choice === 'S') {
+        currentHand.isDone = true; moveToNextHand();
+    } else if (choice === 'D') {
+        if (currentTrainingMode === 5) { bankroll -= currentHand.bet; currentHand.bet *= 2; }
+        currentHand.cards.push(drawCardFromCSM()); 
+        if (getHandAnalysis(currentHand).sum > 21) triggeredBust = true;
+        currentHand.isDone = true; moveToNextHand();
+    } else if (choice === 'P') {
+        if (playerHands.length >= 4) return;
+        if (currentTrainingMode === 5) { bankroll -= currentHand.bet; }
+        
+        const c1 = currentHand.cards[0], c2 = currentHand.cards[1];
+        const isAces = (c1.d === 'A');
+
+        currentHand.cards = [c1, drawCardFromCSM()];
+        currentHand.isSplit = true;
+
+        const newHand = { cards: [c2, drawCardFromCSM()], isDone: false, isSplit: true, bet: currentHand.bet, isSurrendered: false };
+        playerHands.splice(currentHandIndex + 1, 0, newHand);
+
+        if (isAces) { currentHand.isDone = true; newHand.isDone = true; moveToNextHand(); }
+    }
+
+    updateUI();
+}
+
+function createCardHTML(c) {
+    if (!c) return '';
+    return `<div class="card ${c.r ? 'red' : ''}"><div>${c.d}</div><div class="card-suit">${c.s}</div></div>`;
+}
+
+function updateUI() {
+    document.getElementById('total-count').innerText = total;
+    document.getElementById('correct-count').innerText = correct;
+    document.getElementById('accuracy').innerText = total === 0 ? "0%" : Math.round((correct / total) * 100) + "%";
+    document.getElementById('bankroll').innerText = bankroll;
+
+    let dCardsHTML = "";
+    if (dealerHand) {
+        if (currentTrainingMode === 5) {
+            if (isRoundOver) dCardsHTML = dealerHand.cards.map(c => createCardHTML(c)).join('');
+            else dCardsHTML = createCardHTML(dealerCard) + `<div class="card card-back"></div>`;
+        } else {
+            dCardsHTML = createCardHTML(dealerCard);
+        }
+    }
+    document.getElementById('dealer-cards').innerHTML = dCardsHTML;
+
+    const container = document.getElementById('player-hands-container');
+    container.innerHTML = "";
+    
+    playerHands.forEach((hand, idx) => {
+        const val = getHandAnalysis(hand);
+        const isActive = (idx === currentHandIndex && !isRoundOver);
+        let isBJ = checkIsBlackjack(hand);
+        
+        let txt = `${val.sum} 點`;
+        if (isBJ) txt = "Blackjack!";
+        else if (val.isSoft && val.sum < 21) txt = `軟 ${val.sum} 點`;
+        if (!isBJ && val.sum > 21) txt = `爆牌 (${val.sum})`;
+        if (hand.isSurrendered) txt = "已投降";
+
+        const box = document.createElement('div');
+        box.className = `player-hand-box ${isActive ? 'active' : ''}`;
+        
+        let betDisplay = currentTrainingMode === 5 ? `<div style="font-size:0.8rem;color:#81c784;margin-bottom:3px;">下注: $${hand.bet}</div>` : "";
+
+        box.innerHTML = `
+            <div style="font-size:0.8rem;color:var(--gold);margin-bottom:5px;display:${playerHands.length>1?'block':'none'}">第 ${idx+1} 門 ${isActive?'(操作中)':''}</div>
+            ${betDisplay}
+            <div class="cards-display">${hand.cards.map(c=>createCardHTML(c)).join('')}</div>
+            <div style="font-size:0.9rem;margin-top:5px;font-weight:bold;color:${isBJ?'var(--gold)':(val.sum>21||hand.isSurrendered?'#ef9a9a':'#fff')}">${txt}</div>
+        `;
+        container.appendChild(box);
+    });
+
+    if (isRoundOver) {
+        document.getElementById('btn-hit').disabled = true;
+        document.getElementById('btn-stand').disabled = true;
+        document.getElementById('btn-double').disabled = true;
+        document.getElementById('btn-split').disabled = true;
+        document.getElementById('btn-surrender').disabled = true;
+        document.getElementById('btn-next').style.display = 'block';
+    } else {
+        const cur = playerHands[currentHandIndex];
+        document.getElementById('btn-hit').disabled = false;
+        document.getElementById('btn-stand').disabled = false;
+        
+        let canDouble = (cur.cards.length === 2);
+        if (currentTrainingMode === 5 && bankroll < cur.bet) canDouble = false;
+        document.getElementById('btn-double').disabled = !canDouble;
+        
+        let canSplit = (getHandAnalysis(cur).isPair && playerHands.length < 4);
+        if (currentTrainingMode === 5 && bankroll < cur.bet) canSplit = false;
+        document.getElementById('btn-split').disabled = !canSplit;
+        
+        // 莊家為A時禁止投降
+        let canSurrender = (cur.cards.length === 2 && playerHands.length === 1);
+        if (dealerCard && dealerCard.d === 'A') {
+            canSurrender = false;
+        }
+        document.getElementById('btn-surrender').disabled = !canSurrender;
+    }
+}
+
+// 鍵盤操作監聽器
+document.addEventListener('keydown', function(e) {
+    const key = e.key.toLowerCase();
+    
+    // 輔助函式：確保按鈕存在且處於啟用狀態才執行點擊
+    const clickIfEnabled = (id) => {
+        const btn = document.getElementById(id);
+        if (btn && !btn.disabled && btn.style.display !== 'none') {
+            btn.click();
+        }
+    };
+
+    if (key === 'a') clickIfEnabled('btn-hit');
+    else if (key === 's') clickIfEnabled('btn-stand');
+    else if (key === 'd') clickIfEnabled('btn-double');
+    else if (key === 'f') clickIfEnabled('btn-split');
+    else if (key === 'g') clickIfEnabled('btn-surrender');
+    else if (key === ' ') {
+        const btnNext = document.getElementById('btn-next');
+        if (btnNext && btnNext.style.display !== 'none') {
+            e.preventDefault(); // 防止按下空白鍵時畫面自動往下捲動
+            btnNext.click();
+        }
+    }
+});
+</script>
+</body>
+</html>
