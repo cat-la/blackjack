@@ -174,11 +174,15 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
 </header>
 <div class="main-layout" id="main-grid">
     <div class="mode-column">
-        <div class="mode-title">🎯 特訓專區</div>
+        <div class="mode-title">🎯 特訓模式</div>
         <button id="mode-1" class="btn-mode active" onclick="clickChangeMode(1)">普通模式</button>
         <button id="mode-2" class="btn-mode" onclick="clickChangeMode(2)">分牌特訓</button>
         <button id="mode-3" class="btn-mode" onclick="clickChangeMode(3)">加倍特訓</button>
         <button id="mode-4" class="btn-mode" onclick="clickChangeMode(4)">軟牌特訓</button>
+
+        <!-- 新增：介於特訓與實戰專區之間的註解 -->
+        <div class="mode-notice">[訓練時將自動開始下一局]</div>
+
         <div class="mode-title" style="margin-top:15px;">💰 實戰專區</div>
         <button id="mode-5" class="btn-mode btn-real" onclick="clickChangeMode(5)">實戰模式</button>
     </div>
