@@ -3,174 +3,205 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>21點實戰與特訓營-S17終極音效版</title>
+<title>21點實戰與特訓營-S17終極優化版</title>
 <style>
-:root { --casino-green: #0e633a; --felt-dark: #084225; --gold: #ffd700; --card-white: #ffffff; --correct-blue: #2196F3; --wrong-red: #f44336; --btn-hit-color: #4caf50; --btn-stand-color: #f44336; --btn-double-color: #ff9800; --btn-split-color: #9c27b0; --btn-surrender-color: #e06666; }
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-body { background: radial-gradient(circle, var(--casino-green) 0%, var(--felt-dark) 100%); color: white; min-height: 100vh; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-header { text-align: center; margin-bottom: 20px; width: 100%; }
-h1 { font-size: 1.8rem; color: var(--gold); margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-
-/* ======== 新手教學按鈕樣式 ======== */
-.guide-btn {
-    font-size: 0.5em; /* 一半高的字體 */
-    color: #81c784;
-    cursor: pointer;
-    border: 1px solid #81c784;
-    border-radius: 4px;
-    padding: 2px 6px;
-    transition: all 0.2s;
-    background: rgba(129, 199, 132, 0.1);
+:root { 
+    --casino-green: #0b532d; 
+    --felt-dark: #052b14; 
+    --gold: #f3c623; 
+    --gold-dim: #bda036;
+    --card-white: #fafafa; 
+    --correct-blue: #29b6f6; 
+    --wrong-red: #ef5350; 
+    --btn-hit-color: #4caf50; 
+    --btn-stand-color: #f44336; 
+    --btn-double-color: #ff9800; 
+    --btn-split-color: #9c27b0; 
+    --btn-surrender-color: #78909c; 
+    --panel-bg: rgba(0, 0, 0, 0.4);
+    --border-light: rgba(255, 255, 255, 0.15);
 }
-.guide-btn:hover {
-    color: var(--gold);
-    border-color: var(--gold);
-    background: rgba(255, 215, 0, 0.15);
-    box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+body { 
+    background: radial-gradient(circle at 50% 30%, var(--casino-green) 0%, var(--felt-dark) 100%); 
+    color: white; 
+    min-height: 100vh; 
+    padding: 20px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
 }
-/* ======================================= */
 
+/* ======== Header ======== */
+header { text-align: center; margin-bottom: 25px; width: 100%; }
+h1 { font-size: 2rem; color: var(--gold); margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.guide-btn { font-size: 0.45em; color: #a5d6a7; cursor: pointer; border: 1px solid #a5d6a7; border-radius: 6px; padding: 4px 8px; transition: all 0.2s; background: rgba(165, 214, 167, 0.1); letter-spacing: 1px; }
+.guide-btn:hover { color: var(--gold); border-color: var(--gold); background: rgba(243, 198, 35, 0.15); box-shadow: 0 0 10px rgba(243, 198, 35, 0.4); transform: translateY(-1px); }
+
+/* ======== Layout ======== */
 .main-layout { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; max-width: 1600px; }
 @media (min-width: 1150px) { 
     .main-layout { grid-template-columns: 220px 1.15fr 80px 420px; align-items: start; } 
     .main-layout.hide-chart { grid-template-columns: 220px 1fr 80px 0px; } 
 }
-.mode-column { display: flex; flex-direction: column; gap: 10px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; }
-.mode-title { font-size: 1rem; color: var(--gold); font-weight: bold; text-align: center; margin-bottom: 5px; width: 100%; }
-.btn-mode { background: #455a64; color: #eceff1; border: 2px solid transparent; padding: 12px 5px; font-size: 0.95rem; font-weight: bold; width: 100%; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-.btn-mode.active { border-color: var(--gold); background: #263238; color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
-.btn-real { background: #37474f; color: #eceff1; border: 2px solid transparent; }
-.btn-real:not(.active) { border: 2px solid rgba(255, 179, 0, 0.15); }
+
+/* ======== Left Panel (Modes) ======== */
+.mode-column { display: flex; flex-direction: column; gap: 12px; background: var(--panel-bg); border: 1px solid var(--border-light); border-radius: 16px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); backdrop-filter: blur(4px); }
+.mode-title { font-size: 1.05rem; color: var(--gold); font-weight: bold; text-align: center; margin-bottom: 5px; border-bottom: 1px solid rgba(243,198,35,0.2); padding-bottom: 8px; }
+.btn-mode { background: rgba(255,255,255,0.05); color: #eceff1; border: 1px solid transparent; padding: 12px; font-size: 0.95rem; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.5px; }
+.btn-mode:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+.btn-mode.active { background: rgba(243, 198, 35, 0.15); color: var(--gold); border: 1px solid var(--gold); box-shadow: inset 0 0 10px rgba(243,198,35,0.1), 0 4px 10px rgba(0,0,0,0.2); }
+.btn-real { background: rgba(33, 150, 243, 0.1); color: #81d4fa; }
+.btn-real.active { background: rgba(33, 150, 243, 0.25); color: #b3e5fc; border-color: #4fc3f7; box-shadow: inset 0 0 10px rgba(33,150,243,0.2); }
+.mode-notice { font-size: 0.75rem; color: #9e9e9e; text-align: center; margin-top: -5px; }
+
+/* ======== Center Game Area ======== */
 .game-column { display: flex; flex-direction: column; align-items: center; width: 100%; }
-.scoreboard { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--gold); border-radius: 10px; padding: 10px 15px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 8px; width: 100%; max-width: 650px; margin-bottom: 15px; font-size: 0.95rem; }
-.score-item span { font-weight: bold; color: var(--gold); }
-.feedback-box { min-height: 55px; width: 100%; max-width: 650px; display: flex; justify-content: center; align-items: center; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-size: 1.1rem; text-align: center; padding: 5px 15px; background: rgba(255,255,255,0.1); color: #ddd; transition: all 0.2s; }
-.table-area { width: 100%; max-width: 650px; display: flex; flex-direction: column; gap: 20px; }
-.hand-section { border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; position: relative; text-align: center; min-height: 140px; }
-.section-title { position: absolute; top: -10px; left: 20px; background: #084225; padding: 0 10px; font-size: 0.85rem; color: #ccc; }
+.scoreboard { background: var(--panel-bg); border: 1px solid var(--gold-dim); border-radius: 12px; padding: 12px 20px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; width: 100%; max-width: 700px; margin-bottom: 20px; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+.score-item span { font-weight: 800; color: var(--gold); font-size: 1.1em; }
+.feedback-box { min-height: 60px; width: 100%; max-width: 700px; display: flex; justify-content: center; align-items: center; border-radius: 12px; margin-bottom: 20px; font-weight: bold; font-size: 1.15rem; text-align: center; padding: 10px 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); color: #eee; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.2); line-height: 1.4; }
+
+/* ======== Cards & Table ======== */
+.table-area { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 25px; margin-bottom: 20px; }
+.hand-section { border: 1px solid var(--border-light); background: rgba(0,0,0,0.15); border-radius: 16px; padding: 25px 15px 15px 15px; position: relative; text-align: center; min-height: 150px; box-shadow: inset 0 0 20px rgba(0,0,0,0.2); }
+.section-title { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--casino-green); border: 1px solid var(--border-light); padding: 4px 15px; border-radius: 20px; font-size: 0.85rem; color: #fff; font-weight: bold; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
 .player-hands-container { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; width: 100%; }
-.player-hand-box { flex: 1; min-width: 140px; border: 2px solid transparent; background: rgba(255,255,255,0.02); border-radius: 8px; padding: 10px; }
-.player-hand-box.active { border-color: var(--gold); background: rgba(255, 215, 0, 0.05); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
-.cards-display { display: flex; justify-content: center; gap: 8px; min-height: 100px; align-items: center; margin-top: 5px; }
-.card { width: 65px; height: 95px; background: var(--card-white); border-radius: 6px; color: black; display: flex; flex-direction: column; justify-content: space-between; padding: 5px; font-weight: bold; font-size: 1.2rem; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
-.card.red { color: #d32f2f; }
-.card .card-suit { font-size: 1.4rem; text-align: right; line-height: 1; }
-.card-back { background: repeating-linear-gradient(45deg, #b0bec5, #b0bec5 10px, #90a4ae 10px, #90a4ae 20px); }
-.controls-area { width: 100%; max-width: 650px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 20px; }
-.controls-area button { position: relative; padding: 15px 2px; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: all 0.1s; }
-.controls-area button:disabled { opacity: 0.2; cursor: not-allowed; box-shadow: none; }
-.btn-hit { background-color: var(--btn-hit-color) !important; } .btn-stand { background-color: var(--btn-stand-color) !important; } .btn-double { background-color: var(--btn-double-color) !important; } .btn-split { background-color: var(--btn-split-color) !important; } .btn-surrender { background-color: var(--btn-surrender-color) !important; } 
-.btn-next { grid-column: span 5; background-color: #2196F3 !important; font-size: 1.3rem; padding: 18px 5px; margin-top: 10px; display: block; }
-.key-hint { position: absolute; top: 4px; left: 4px; font-size: 0.7rem; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; line-height: 1; font-weight: normal; }
-.btn-next .key-hint { top: 6px; left: 8px; font-size: 0.85rem; }
+.player-hand-box { flex: 1; min-width: 150px; border: 2px solid transparent; background: transparent; border-radius: 12px; padding: 10px; transition: all 0.3s; }
+.player-hand-box.active { border-color: rgba(243,198,35,0.6); background: rgba(243, 198, 35, 0.08); box-shadow: 0 0 15px rgba(243, 198, 35, 0.15); transform: scale(1.02); }
 
-.chip-column { display: flex; flex-direction: column; align-items: center; gap: 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px 5px; }
-.current-bet-display { color: var(--gold); font-weight: bold; text-align: center; font-size: 1rem; margin-bottom: 5px; }
-.chip { width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: inset 0 0 5px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3); border: 4px dashed rgba(255,255,255,0.6); transition: transform 0.1s; user-select: none; }
-.chip:active { transform: scale(0.9); }
-.chip-0 { background-color: #757575; border-style: solid; border-color: #bdbdbd; box-shadow: 0 4px 6px rgba(0,0,0,0.3); } 
-.chip-10 { background-color: #1976D2; } 
-.chip-50 { background-color: #388E3C; } 
-.chip-100 { background-color: #212121; color: #fff; border-color: #FFD700; }
-
-.chart-column { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 12px; min-width: 430px; max-width: 500px; width: 100%; }
-.chart-header-area { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.15); }
-.chart-fold-wrapper { max-height: 900px; transition: max-height 0.4s ease, opacity 0.3s ease; opacity: 1; margin-top: 12px; overflow: hidden; }
-.hide-table-content .chart-fold-wrapper { max-height: 0px !important; opacity: 0 !important; margin-top: 0px !important; }
-.chart-title { font-size: 0.95rem; color: var(--gold); font-weight: bold; text-align: right; flex-grow: 1; }
-.toggle-container { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: bold; color: #ccc; user-select: none; }
-.switch { position: relative; display: inline-block; width: 40px; height: 22px; } .switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #455a64; transition: .3s; border-radius: 22px; }
-.slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
-input:checked + .slider { background-color: var(--btn-hit-color); } input:checked + .slider:before { transform: translateX(18px); }
-table.strategy-matrix { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; font-weight: bold; color: white; }
-table.strategy-matrix th, table.strategy-matrix td { padding: 5px 1px; border: 1px solid rgba(255,255,255,0.1); }
-table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 0.8rem; }
-.row-header { background: rgba(0,0,0,0.4); color: var(--gold); width: 40px; }
-.section-divider { background: rgba(255,255,255,0.08) !important; color: var(--gold); text-align: left; padding-left: 10px !important; font-size: 0.8rem; }
-.cell-h { background-color: rgba(76, 175, 80, 0.85); } .cell-s { background-color: rgba(33, 150, 243, 0.85); }
-.cell-d { background-color: rgba(255, 152, 0, 0.85); } .cell-p { background-color: rgba(156, 39, 176, 0.85); } .cell-ur { background-color: rgba(204, 17, 17, 0.85); }
-.legend { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 0.75rem; }
-.legend-item { display: flex; align-items: center; gap: 4px; } .legend-color { width: 12px; height: 12px; border-radius: 3px; }
-
-@keyframes flashCorrectBtn {
-    0%, 100% { box-shadow: 0 4px 6px rgba(0,0,0,0.2); filter: brightness(1); transform: scale(1); }
-    50% { box-shadow: 0 0 25px #fff; border: 2px solid #fff; filter: brightness(1.4); transform: scale(1.08); z-index: 10; }
+@keyframes dealCard {
+    0% { transform: translateY(-30px) scale(0.9) rotateX(10deg); opacity: 0; }
+    100% { transform: translateY(0) scale(1) rotateX(0); opacity: 1; }
 }
-.flash-correct-btn { animation: flashCorrectBtn 0.4s ease-in-out 3; }
+
+.cards-display { display: flex; justify-content: center; gap: -15px; min-height: 110px; align-items: center; margin-top: 10px; }
+.card { width: 70px; height: 100px; background: var(--card-white); border-radius: 8px; color: #222; display: flex; flex-direction: column; justify-content: space-between; padding: 6px; font-weight: 800; font-size: 1.3rem; box-shadow: -2px 4px 8px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.1); margin-left: -20px; animation: dealCard 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; position: relative; }
+.card:first-child { margin-left: 0; }
+.card.red { color: #d32f2f; }
+.card .card-suit { font-size: 1.6rem; text-align: right; line-height: 0.9; }
+.card-back { background: radial-gradient(circle, #546e7a 20%, #263238 100%); border: 2px solid #fff; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.1)), repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.1)); background-position: 0 0, 10px 10px; background-size: 20px 20px; }
+
+/* ======== Controls ======== */
+.controls-area { width: 100%; max-width: 700px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; }
+.controls-area button { position: relative; padding: 18px 5px; font-size: 1rem; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; color: white; box-shadow: 0 6px 0 rgba(0,0,0,0.3); transition: all 0.1s; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
+.controls-area button:active:not(:disabled) { transform: translateY(6px); box-shadow: 0 0px 0 rgba(0,0,0,0.3); }
+.controls-area button:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; transform: translateY(6px); filter: grayscale(50%); }
+.btn-hit { background: linear-gradient(145deg, #4caf50, #388e3c); } 
+.btn-stand { background: linear-gradient(145deg, #ef5350, #c62828); } 
+.btn-double { background: linear-gradient(145deg, #ffb300, #f57c00); } 
+.btn-split { background: linear-gradient(145deg, #ab47bc, #7b1fa2); } 
+.btn-surrender { background: linear-gradient(145deg, #78909c, #455a64); } 
+.btn-next { grid-column: span 5; background: linear-gradient(145deg, #29b6f6, #0277bd); font-size: 1.4rem; padding: 20px 5px; margin-top: 15px; display: block; border-radius: 12px; letter-spacing: 1px; }
+.key-hint { position: absolute; top: 6px; left: 6px; font-size: 0.7rem; color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; font-weight: normal; }
+
+/* ======== Chips ======== */
+.chip-column { display: flex; flex-direction: column; align-items: center; gap: 15px; background: var(--panel-bg); border: 1px solid var(--border-light); border-radius: 16px; padding: 20px 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); backdrop-filter: blur(4px); }
+.current-bet-display { color: var(--gold); font-weight: bold; text-align: center; font-size: 1.1rem; margin-bottom: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; width: 100%; }
+.chip { width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 1.2rem; cursor: pointer; border: 6px dashed rgba(255,255,255,0.8); transition: all 0.2s; user-select: none; position: relative; }
+.chip::after { content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); }
+.chip:hover { transform: translateY(-3px) scale(1.05); }
+.chip:active { transform: translateY(2px) scale(0.95); }
+.chip-0 { background-color: #607d8b; border-style: solid; box-shadow: 0 6px 10px rgba(0,0,0,0.4), inset 0 -4px 8px rgba(0,0,0,0.4); } 
+.chip-10 { background-color: #1976D2; box-shadow: 0 6px 10px rgba(0,0,0,0.4), inset 0 -4px 8px rgba(0,0,0,0.4); } 
+.chip-50 { background-color: #388E3C; box-shadow: 0 6px 10px rgba(0,0,0,0.4), inset 0 -4px 8px rgba(0,0,0,0.4); } 
+.chip-100 { background-color: #212121; color: var(--gold); border-color: var(--gold); box-shadow: 0 6px 10px rgba(0,0,0,0.5), inset 0 -4px 8px rgba(0,0,0,0.6); }
+
+/* ======== Chart ======== */
+.chart-column { background: var(--panel-bg); border: 1px solid var(--border-light); border-radius: 16px; padding: 15px; min-width: 430px; max-width: 500px; width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.chart-header-area { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.15); }
+.chart-fold-wrapper { max-height: 900px; transition: max-height 0.4s ease, opacity 0.3s ease; opacity: 1; margin-top: 15px; overflow: hidden; }
+.hide-table-content .chart-fold-wrapper { max-height: 0px !important; opacity: 0 !important; margin-top: 0px !important; }
+.chart-title { font-size: 1rem; color: var(--gold); font-weight: bold; text-align: right; flex-grow: 1; }
+table.strategy-matrix { width: 100%; border-collapse: separate; border-spacing: 1px; text-align: center; font-size: 0.85rem; font-weight: bold; color: white; }
+table.strategy-matrix th, table.strategy-matrix td { padding: 6px 2px; border-radius: 3px; }
+table.strategy-matrix th { background: rgba(255,255,255,0.1); color: #eee; font-size: 0.8rem; }
+.row-header { background: rgba(0,0,0,0.6); color: var(--gold); width: 45px; border-radius: 4px; }
+.section-divider { background: transparent !important; color: var(--gold); text-align: left; padding: 10px 5px 4px 5px !important; font-size: 0.85rem; border-bottom: 1px solid rgba(243,198,35,0.3); }
+.cell-h { background: linear-gradient(135deg, #4caf50, #2e7d32); } .cell-s { background: linear-gradient(135deg, #ef5350, #c62828); }
+.cell-d { background: linear-gradient(135deg, #ffb300, #f57c00); } .cell-p { background: linear-gradient(135deg, #ab47bc, #7b1fa2); } .cell-ur { background: linear-gradient(135deg, #78909c, #455a64); }
+.legend { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; font-size: 0.8rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; }
+.legend-item { display: flex; align-items: center; gap: 6px; } .legend-color { width: 14px; height: 14px; border-radius: 4px; }
+
+/* ======== Toggles ======== */
+.toggle-container { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: bold; color: #ccc; user-select: none; }
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; } .switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #546e7a; transition: .3s; border-radius: 24px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+input:checked + .slider { background-color: var(--btn-hit-color); } input:checked + .slider:before { transform: translateX(20px); }
+
+/* ======== Animations ======== */
+@keyframes flashCorrectBtn {
+    0%, 100% { filter: brightness(1); transform: translateY(0); }
+    50% { box-shadow: 0 0 30px #fff; filter: brightness(1.5); transform: translateY(-5px) scale(1.05); z-index: 10; border: 2px solid white; }
+}
+.flash-correct-btn { animation: flashCorrectBtn 0.5s ease-in-out 2; }
 
 @keyframes flashAccuracyText {
     0%, 100% { color: var(--gold); transform: scale(1); }
-    50% { color: var(--wrong-red); transform: scale(1.3); text-shadow: 0 0 10px rgba(244, 67, 54, 0.8); }
+    50% { color: var(--wrong-red); transform: scale(1.4); text-shadow: 0 0 15px rgba(244, 67, 54, 1); }
 }
 .flash-accuracy { animation: flashAccuracyText 0.4s ease-in-out 3; display: inline-block; }
 
-/* ======== 彈出視窗 (Modal) 樣式 ======== */
-.modal-overlay {
-    display: none; 
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.75);
-    z-index: 9999;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    backdrop-filter: blur(3px);
-}
+/* ======== Modal ======== */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(5px); }
 .modal-overlay.show { display: flex; opacity: 1; }
-.modal-content {
-    background: var(--felt-dark);
-    border: 2px solid var(--gold);
-    border-radius: 12px;
-    width: 90%;
-    max-width: 600px;
-    padding: 30px 25px;
-    color: white;
-    position: relative;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
-    transform: translateY(-20px) scale(0.95);
-    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    max-height: 85vh;
-    overflow-y: auto;
-}
+.modal-content { background: var(--felt-dark); border: 2px solid var(--gold); border-radius: 16px; width: 92%; max-width: 600px; padding: 30px; color: white; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.8); transform: translateY(-30px) scale(0.95); transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); max-height: 85vh; overflow-y: auto; }
 .modal-overlay.show .modal-content { transform: translateY(0) scale(1); }
-.close-modal {
-    position: absolute;
-    top: 15px; right: 20px;
-    font-size: 2rem;
-    color: #aaa;
-    cursor: pointer;
-    transition: color 0.2s;
-    line-height: 1;
-}
+.close-modal { position: absolute; top: 15px; right: 20px; font-size: 2.5rem; color: rgba(255,255,255,0.5); cursor: pointer; transition: color 0.2s; line-height: 1; }
 .close-modal:hover { color: var(--wrong-red); }
-.modal-content h2 { color: var(--gold); text-align: center; margin-bottom: 20px; font-size: 1.6rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-.modal-content h3 { color: #81c784; margin-top: 20px; margin-bottom: 10px; font-size: 1.15rem; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 5px; }
-.modal-content ul { list-style-type: none; margin-bottom: 15px; }
-.modal-content li { margin-bottom: 12px; font-size: 0.95rem; line-height: 1.6; color: #e0e0e0; padding-left: 15px; position: relative; }
-.modal-content li::before { content: "►"; color: var(--gold); position: absolute; left: 0; top: 1px; font-size: 0.8rem; }
-.modal-content li strong { color: var(--gold); font-size: 1.05rem; }
-/* ======================================= */
+.modal-content h2 { color: var(--gold); text-align: center; margin-bottom: 25px; font-size: 1.8rem; border-bottom: 2px solid rgba(243,198,35,0.3); padding-bottom: 10px; }
+.modal-content h3 { color: #a5d6a7; margin-top: 25px; margin-bottom: 12px; font-size: 1.2rem; }
+.modal-content ul { list-style-type: none; margin-bottom: 20px; }
+.modal-content li { margin-bottom: 12px; font-size: 1rem; line-height: 1.6; color: #e0e0e0; padding-left: 20px; position: relative; }
+.modal-content li::before { content: "♦"; color: var(--gold); position: absolute; left: 0; top: 0px; font-size: 1.1rem; }
+.modal-content li strong { color: #fff; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
 
+/* ======== Mobile specific optimizations ======== */
 @media (max-width: 1149px) { 
-    .chip-column { flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 650px; padding: 10px; margin-bottom: 15px; } 
-    .current-bet-display { margin-bottom: 0; margin-right: 15px; display: flex; align-items: center; gap: 10px; }
-    .current-bet-display br { display: none; }
+    .chip-column { flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 700px; margin-bottom: 15px; } 
+    .current-bet-display { margin-bottom: 0; margin-right: 15px; width: auto; }
 }
-@media (max-width: 480px) { 
-    .controls-area button { font-size: 0.82rem; padding: 12px 1px; } 
-    .chart-column { min-width: 100%; } 
+
+@media (max-width: 768px) { 
+    body { padding-bottom: 120px; padding-top: 10px; } /* 底部留白給固定控制列 */
+    h1 { font-size: 1.5rem; }
+    .scoreboard { padding: 10px; font-size: 0.9rem; gap: 8px; justify-content: space-between; }
+    .feedback-box { font-size: 1rem; padding: 10px; min-height: 50px; }
+    
+    /* 將操作按鈕固定在螢幕最下方 (拇指操作熱區) */
+    .controls-area { 
+        position: fixed; 
+        bottom: 0; left: 0; 
+        width: 100%; max-width: 100%; 
+        background: rgba(8, 43, 20, 0.95); 
+        backdrop-filter: blur(10px); 
+        padding: 12px 8px calc(12px + env(safe-area-inset-bottom)); /* 支援 iOS 底部安全區 */
+        margin: 0; 
+        border-top: 2px solid rgba(243,198,35,0.4); 
+        box-shadow: 0 -10px 20px rgba(0,0,0,0.6); 
+        z-index: 1000;
+        gap: 6px;
+    }
+    .controls-area button { padding: 12px 2px; font-size: 0.8rem; border-radius: 8px; box-shadow: 0 4px 0 rgba(0,0,0,0.3); }
+    .controls-area button:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0px 0 rgba(0,0,0,0.3); }
+    .btn-next { font-size: 1.1rem; padding: 15px 5px; margin-top: 5px; }
+    
+    .chart-column { min-width: 100%; padding: 10px; } 
     table.strategy-matrix { font-size: 0.7rem; } 
-    h1 { flex-direction: column; gap: 5px; }
+    .row-header { width: 35px; }
+    .card { width: 55px; height: 80px; font-size: 1.1rem; margin-left: -25px; }
+    .card .card-suit { font-size: 1.3rem; }
+    .player-hands-container { gap: 5px; }
+    .player-hand-box { min-width: 110px; padding: 8px; }
 }
 </style>
 </head>
 <body>
 <header>
-    <h1>21點實戰與特訓營 <span class="guide-btn" onclick="openGuide()">[新手教學]</span></h1>
-    <p style="color: #ccc; font-size: 0.85rem;"> CSM洗牌機 8副牌｜軟17｜遲降｜DAS｜BJ 3:2 </p>
+    <h1>21點實戰與特訓營 <span class="guide-btn" onclick="openGuide()">新手教學</span></h1>
+    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; letter-spacing: 1px;"> CSM洗牌機 8副牌｜軟17遲降｜DAS｜BJ 3:2 </p>
 </header>
+
 <div class="main-layout" id="main-grid">
     <div class="mode-column">
         <div class="mode-title">🎯 特訓模式</div>
@@ -178,21 +209,15 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
         <button id="mode-2" class="btn-mode" onclick="clickChangeMode(2)">分牌特訓</button>
         <button id="mode-3" class="btn-mode" onclick="clickChangeMode(3)">加倍特訓</button>
         <button id="mode-4" class="btn-mode" onclick="clickChangeMode(4)">軟牌特訓</button>
-
         <div class="mode-notice">[訓練時將自動開始下一局]</div>
 
         <div class="mode-title" style="margin-top:15px;">💰 實戰專區</div>
         <button id="mode-5" class="btn-mode btn-real" onclick="clickChangeMode(5)">實戰模式</button>
 
-        <!-- ======== 新增：顯示手牌點數開關 ======== -->
         <div class="toggle-container" style="margin-top: 15px; justify-content: center; width: 100%;">
-            <label class="switch">
-                <input type="checkbox" id="point-toggle" onchange="updateUI()" checked>
-                <span class="slider"></span>
-            </label>
+            <label class="switch"><input type="checkbox" id="point-toggle" onchange="updateUI()" checked><span class="slider"></span></label>
             <span style="font-size: 0.85rem;">顯示手牌點數</span>
         </div>
-        <!-- ======================================= -->
     </div>
     
     <div class="game-column">
@@ -202,7 +227,8 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
             <div class="score-item">答對: <span id="correct-count">0</span></div>
             <div class="score-item">正確率: <span id="accuracy-wrapper"><span id="accuracy">0%</span></span></div>
         </div>
-        <div id="feedback" class="feedback-box">模式已就緒，請點擊下方大按鈕開始發牌！</div>
+        <div id="feedback" class="feedback-box">模式已就緒，請點擊下方按鈕開始發牌！</div>
+        
         <div class="table-area">
             <div class="hand-section">
                 <div class="section-title">莊家明牌</div>
@@ -213,24 +239,25 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
                 <div class="player-hands-container" id="player-hands-container"></div>
             </div>
         </div>
+        
         <div class="controls-area">
-            <button id="btn-hit" class="btn-hit" onclick="handleAction('H')" disabled><span class="key-hint">A</span>要牌<br>(Hit)</button>
-            <button id="btn-stand" class="btn-stand" onclick="handleAction('S')" disabled><span class="key-hint">S</span>停牌<br>(Stand)</button>
-            <button id="btn-double" class="btn-double" onclick="handleAction('D')" disabled><span class="key-hint">D</span>翻倍<br>(Double)</button>
-            <button id="btn-split" class="btn-split" onclick="handleAction('P')" disabled><span class="key-hint">F</span>分牌<br>(Split)</button>
-            <button id="btn-surrender" class="btn-surrender" onclick="handleAction('UR')" disabled><span class="key-hint">G</span>投降<br>(Surrender)</button>
-            <button id="btn-next" class="btn-next" onclick="nextRound()"><span class="key-hint">空白鍵</span>點擊發牌開始遊戲</button>
+            <button id="btn-hit" class="btn-hit" onclick="handleAction('H')" disabled><span class="key-hint">A</span>要牌<br>Hit</button>
+            <button id="btn-stand" class="btn-stand" onclick="handleAction('S')" disabled><span class="key-hint">S</span>停牌<br>Stand</button>
+            <button id="btn-double" class="btn-double" onclick="handleAction('D')" disabled><span class="key-hint">D</span>翻倍<br>Double</button>
+            <button id="btn-split" class="btn-split" onclick="handleAction('P')" disabled><span class="key-hint">F</span>分牌<br>Split</button>
+            <button id="btn-surrender" class="btn-surrender" onclick="handleAction('UR')" disabled><span class="key-hint">G</span>投降<br>Surr</button>
+            <button id="btn-next" class="btn-next" onclick="nextRound()"><span class="key-hint">空白鍵</span>點擊開始發牌</button>
         </div>
     </div>
 
     <div class="chip-column">
         <div class="current-bet-display">
-            目前下注<br>$<span id="current-bet-amt">100</span>
+            目前下注: $<span id="current-bet-amt">100</span>
         </div>
         <div class="chip chip-100" onclick="addBet(100)">100</div>
         <div class="chip chip-50" onclick="addBet(50)">50</div>
         <div class="chip chip-10" onclick="addBet(10)">10</div>
-        <div class="chip chip-0" onclick="addBet(0)">0</div>
+        <div class="chip chip-0" onclick="addBet(0)">清空</div>
     </div>
 
     <div class="chart-column" id="chart-panel">
@@ -239,7 +266,7 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
                 <label class="switch"><input type="checkbox" id="chart-toggle" onchange="toggleChart()" checked><span class="slider"></span></label>
                 <span id="toggle-text">隱藏圖表</span>
             </div>
-            <div class="chart-title">8副牌標準策略 (S17變體)</div>
+            <div class="chart-title">8副牌標準策略 (S17)</div>
         </div>
         <div class="chart-fold-wrapper">
             <table class="strategy-matrix">
@@ -277,43 +304,38 @@ table.strategy-matrix th { background: rgba(0,0,0,0.5); color: #ccc; font-size: 
                 </tbody>
             </table>
             <div class="legend">
-                <div class="legend-item"><div class="legend-color cell-h"></div>H=要牌</div>
-                <div class="legend-item"><div class="legend-color cell-s"></div>S=停牌</div>
-                <div class="legend-item"><div class="legend-color cell-d"></div>D=翻倍</div>
-                <div class="legend-item"><div class="legend-color cell-p"></div>P=分牌</div>
-                <div class="legend-item"><div class="legend-color cell-ur"></div>SUR=投降</div>
+                <div class="legend-item"><div class="legend-color cell-h"></div>要牌(H)</div>
+                <div class="legend-item"><div class="legend-color cell-s"></div>停牌(S)</div>
+                <div class="legend-item"><div class="legend-color cell-d"></div>翻倍(D)</div>
+                <div class="legend-item"><div class="legend-color cell-p"></div>分牌(P)</div>
+                <div class="legend-item"><div class="legend-color cell-ur"></div>投降(SUR)</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ======== 新手教學彈出視窗 ======== -->
 <div id="guide-modal" class="modal-overlay" onclick="closeGuide(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <span class="close-modal" onclick="closeGuide()">&times;</span>
         <h2>21點 核心遊戲規則 🃏</h2>
-        
         <h3>1. 勝負與平手</h3>
         <ul>
-            <li><strong>玩家爆牌（Bust）：</strong>如果你的點數超過 21 點，你就立刻輸了（即使後面莊家也超過 21 點，依然算你輸）。</li>
-            <li><strong>平手（Push）：</strong>你與莊家點數相同，拿回原本的賭注。</li>
-            <li><strong>莊家規則：</strong>莊家點數不足 17 點時，必須強制要牌；達到 17 點或以上時，必須強制停牌。</li>
+            <li><strong>玩家爆牌 (Bust)：</strong>若點數超過 21 點即刻判輸。</li>
+            <li><strong>平手 (Push)：</strong>與莊家點數相同，退回原賭注。</li>
+            <li><strong>莊家規則：</strong>不足 17 點強制要牌；達到 17 點或以上強制停牌。</li>
         </ul>
-
         <h3>2. 特殊牌型</h3>
         <ul>
-            <li><strong>王牌 A：</strong>可以當作 1 點 或 11 點。</li>
-            <li><strong>Blackjack（天然21點）：</strong>若起手兩張牌為一張 A + 一張 10點（10、J、Q、K），即為 Blackjack！可直接贏得 1.5 倍 獎金（賠率 3:2），除非莊家也是 Blackjack。</li>
+            <li><strong>王牌 A：</strong>視為 1 點 或 11 點。</li>
+            <li><strong>Blackjack：</strong>起手 A + 10點牌 (10, J, Q, K)。直接贏得 1.5 倍獎金。</li>
         </ul>
-
         <h3>3. 玩家特殊行動</h3>
         <ul>
-            <li><strong>加倍下注（Double Down）：</strong>若覺得局勢大好（例如手上是 10 點或 11 點），可加倍原本賭注，但代價是強制只能再拿一張牌。</li>
-            <li><strong>分牌（Split）：</strong>若前兩張拿到一對相同的牌（例如兩張 8 或兩張 10），可投入同等賭注，將它們拆成兩手牌分開玩。</li>
+            <li><strong>加倍 (Double Down)：</strong>加倍原賭注，但強制只能再拿一張牌。</li>
+            <li><strong>分牌 (Split)：</strong>起手兩張點數相同，可投入等額賭注拆成兩手。</li>
         </ul>
     </div>
 </div>
-<!-- ======================================= -->
 
 <script>
 let bankroll = 10000;
@@ -329,11 +351,8 @@ let currentTrainingMode = 1;
 let audioCtx = null;
 
 function addBet(amount) {
-    if (amount === 0) {
-        betSize = 0;
-    } else {
-        betSize += amount;
-    }
+    if (amount === 0) betSize = 0;
+    else betSize += amount;
     document.getElementById('current-bet-amt').innerText = betSize;
 }
 
@@ -359,25 +378,55 @@ function createMasterDeck() {
     }
 }
 createMasterDeck();
-function drawCardFromCSM() { return masterDeck[Math.floor(Math.random() * masterDeck.length)]; }
+// 每次抽牌時，回傳全新的卡片物件，並新增 isDealt（已發出）標記，預設為 false
+function drawCardFromCSM() { 
+    const card = masterDeck[Math.floor(Math.random() * masterDeck.length)];
+    return { d: card.d, s: card.s, r: card.r, w: card.w, isDealt: false }; 
+}
 
+/* ======== 優化後的音效引擎 (修復中途無聲問題) ======== */
 function initAudio() {
     try {
         if (!audioCtx) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (AudioContext) audioCtx = new AudioContext();
         }
-    } catch (e) { console.error("音效初始化失敗", e); }
+        
+        // 【核心修正】檢查音效引擎是否被瀏覽器強制暫停（休眠）
+        // 如果是 suspended 狀態，立刻強制喚醒它
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    } catch (e) { 
+        console.error("音效初始化失敗", e); 
+    }
 }
 
-function playNote(freq, time, dur) {
+// 發牌專用音效 (輕快的刷聲)
+function playCardDealSound() {
+    initAudio(); if(!audioCtx) return;
+    try {
+        let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.connect(g); g.connect(audioCtx.destination);
+        let now = audioCtx.currentTime;
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(0.08, now + 0.02);
+        g.gain.linearRampToValueAtTime(0, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+    } catch(e){}
+}
+
+function playNote(freq, time, dur, type='sine', vol=0.1) {
     if(!audioCtx) return;
     try {
         let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
         osc.connect(g); g.connect(audioCtx.destination);
-        osc.type = 'sine';
+        osc.type = type;
         osc.frequency.setValueAtTime(freq, time);
-        g.gain.setValueAtTime(0.1, time);
+        g.gain.setValueAtTime(vol, time);
         g.gain.exponentialRampToValueAtTime(0.001, time + dur);
         osc.start(time); osc.stop(time + dur);
     } catch(e) {}
@@ -386,22 +435,18 @@ function playNote(freq, time, dur) {
 function playWinSound() { 
     initAudio(); if(!audioCtx) return;
     let now = audioCtx.currentTime; 
-    playNote(523.25, now, 0.2); 
-    playNote(587.33, now+0.2, 0.2); 
-    playNote(659.25, now+0.4, 0.3); 
+    playNote(523.25, now, 0.2); playNote(659.25, now+0.15, 0.2); playNote(783.99, now+0.3, 0.4); 
 }
 function playLoseSound() { 
     initAudio(); if(!audioCtx) return;
     let now = audioCtx.currentTime; 
-    playNote(659.25, now, 0.2); 
-    playNote(587.33, now+0.2, 0.2); 
-    playNote(523.25, now+0.4, 0.3); 
+    playNote(329.63, now, 0.2, 'triangle', 0.15); playNote(293.66, now+0.2, 0.2, 'triangle', 0.15); playNote(261.63, now+0.4, 0.4, 'triangle', 0.15); 
 }
 function playBJSound() { 
     initAudio(); if(!audioCtx) return;
     let now = audioCtx.currentTime; 
-    const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 1046.50]; 
-    notes.forEach((f, i) => playNote(f, now + i*0.08, 0.15)); 
+    const notes = [523.25, 659.25, 783.99, 1046.50]; 
+    notes.forEach((f, i) => playNote(f, now + i*0.1, 0.3)); 
 }
 function playWrongSound() {
     initAudio(); if(!audioCtx) return;
@@ -409,27 +454,18 @@ function playWrongSound() {
         let now = audioCtx.currentTime;
         let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
         osc.connect(g); g.connect(audioCtx.destination);
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(130.81, now);
-        g.gain.setValueAtTime(0.08, now);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+        g.gain.setValueAtTime(0.15, now);
         g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
         osc.start(now); osc.stop(now + 0.3);
     } catch(e){}
 }
 function playCorrectSound() {
     initAudio(); if(!audioCtx) return;
-    try {
-        let now = audioCtx.currentTime;
-        let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
-        osc.connect(g); g.connect(audioCtx.destination);
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, now);
-        g.gain.setValueAtTime(0.1, now);
-        osc.frequency.setValueAtTime(659.25, now + 0.1);
-        g.gain.setValueAtTime(0.1, now + 0.1);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-        osc.start(now); osc.stop(now + 0.4);
-    } catch(e){}
+    let now = audioCtx.currentTime;
+    playNote(659.25, now, 0.15); playNote(880.00, now+0.1, 0.3);
 }
 
 const strategyTable = {
@@ -498,6 +534,7 @@ function matchTrainingModeFilter(hand) {
 
 function nextRound() {
     initAudio();
+    playCardDealSound(); // 開局發牌音效
     if (autoNextTimeout) clearTimeout(autoNextTimeout);
 
     isRoundOver = false;
@@ -532,11 +569,11 @@ function nextRound() {
             if (dBJ) { bankroll += betSize; fb.innerText = "雙方皆為 Blackjack，平手退注！"; } 
             else { bankroll += betSize + (betSize * 1.5); fb.innerText = "★ 天胡 BLACKJACK ★ 贏得 1.5 倍獎金！"; }
             document.getElementById('btn-next').style.display = 'block';
-            document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>點擊發牌開始下一局';
+            document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>開始下一局';
         } else {
-            fb.style.background = "linear-gradient(90deg, #ff9800, #ffeb3b)"; fb.style.color = "#000";
-            fb.innerText = "★ 天胡 BLACKJACK ★ (1秒後自動下一局)";
-            autoNextTimeout = setTimeout(nextRound, 1000);
+            fb.style.background = "linear-gradient(90deg, rgba(255,152,0,0.3), rgba(255,235,59,0.3))"; fb.style.color = "var(--gold)";
+            fb.innerText = "★ 天胡 BLACKJACK ★ (自動下一局)";
+            autoNextTimeout = setTimeout(nextRound, 1200);
         }
         updateUI();
         return;
@@ -545,16 +582,16 @@ function nextRound() {
     if (currentTrainingMode === 5 && dBJ) {
         isRoundOver = true; playLoseSound();
         fb.style.background = "rgba(244,67,54,0.2)"; fb.style.color = "#ef9a9a";
-        fb.innerText = "莊家 Blackjack！你輸了這局。";
+        fb.innerText = "莊家 Blackjack！您輸了這局。";
         document.getElementById('btn-next').style.display = 'block';
-        document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>點擊發牌開始下一局';
+        document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>開始下一局';
         updateUI();
         return;
     }
 
-    fb.style.background = "rgba(255,255,255,0.1)"; fb.style.color = "#ddd";
+    fb.style.background = "rgba(255,255,255,0.05)"; fb.style.color = "#eee";
     let modeNames = ["", "普通模式", "分牌特訓", "加倍特訓", "軟牌特訓", "實戰模式"];
-    fb.innerText = `🎯 當前：【${modeNames[currentTrainingMode]}】。請對照右表做出最佳策略選擇...`;
+    fb.innerText = `🎯 當前：【${modeNames[currentTrainingMode]}】\n請對照策略表做出最佳選擇...`;
     
     updateUI();
 }
@@ -586,8 +623,8 @@ function getCorrectAction(hand, dealerUpCard) {
 
 function playDealerAndSettle() {
     if (currentTrainingMode !== 5) {
-        document.getElementById('feedback').innerText += " (1秒後自動進入下一局)";
-        autoNextTimeout = setTimeout(nextRound, 1000);
+        document.getElementById('feedback').innerText += " (自動進入下一局)";
+        autoNextTimeout = setTimeout(nextRound, 1200);
         updateUI(); return;
     }
 
@@ -600,6 +637,7 @@ function playDealerAndSettle() {
         let dAnal = getHandAnalysis(dealerHand);
         while (dAnal.sum < 17) {
             dealerHand.cards.push(drawCardFromCSM());
+            playCardDealSound();
             dAnal = getHandAnalysis(dealerHand);
         }
     }
@@ -629,19 +667,19 @@ function playDealerAndSettle() {
     let dStr = dSum > 21 ? "莊家爆牌" : `莊家 ${dSum} 點`;
     if (allBustOrSurrender && netWin < 0) dStr = "閒家全爆牌或投降";
     
-    fb.style.background = netWin > 0 ? "rgba(76, 175, 80, 0.3)" : (netWin < 0 ? "rgba(244, 67, 54, 0.3)" : "rgba(255, 255, 255, 0.1)");
-    fb.style.color = "#fff";
-    fb.innerText = `${dStr} (S17)。本局總結算：${netWin > 0 ? '+'+netWin : netWin} 元`;
+    fb.style.background = netWin > 0 ? "rgba(76, 175, 80, 0.25)" : (netWin < 0 ? "rgba(244, 67, 54, 0.25)" : "rgba(255, 255, 255, 0.1)");
+    fb.style.color = netWin > 0 ? "#a5d6a7" : (netWin < 0 ? "#ef9a9a" : "#fff");
+    fb.innerText = `${dStr}。本局結算：${netWin > 0 ? '+'+netWin : netWin} 元`;
     
     document.getElementById('btn-next').style.display = 'block';
-    document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>點擊發牌開始下一局';
+    document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>開始下一局';
     updateUI();
 }
 
 function moveToNextHand() {
     currentHandIndex++;
     while (currentHandIndex < playerHands.length && playerHands[currentHandIndex].isDone) { currentHandIndex++; }
-    if (currentHandIndex >= playerHands.length) { isRoundOver = true; playDealerAndSettle(); }
+    if (currentHandIndex >= playerHands.length) { isRoundOver = true; setTimeout(playDealerAndSettle, 500); }
 }
 
 function handleAction(choice) {
@@ -685,43 +723,38 @@ function handleAction(choice) {
 
         if (currentTrainingMode !== 5) {
             fb.style.background = "rgba(244,67,54,0.2)"; fb.style.color = "#ef9a9a";
-            fb.innerText = `選擇錯誤！標準策略為【${map[correctAns]}】。請重新選擇！`;
+            fb.innerText = `選擇錯誤！標準策略應為【${map[correctAns]}】，請重新選擇！`;
             document.getElementById('total-count').innerText = total;
             return; 
         } else {
             fb.style.background = "rgba(244,67,54,0.2)"; fb.style.color = "#ef9a9a";
-            fb.innerText = `策略錯誤（標準應為 ${map[correctAns]}），遊戲繼續進行...`;
+            fb.innerText = `策略失誤（應為 ${map[correctAns]}），實戰繼續...`;
         }
     } else {
         correct++;
         if (currentTrainingMode !== 5) {
             playCorrectSound();
-            fb.style.background = "rgba(33,140,243,0.2)"; fb.style.color = "#90caf9";
-            fb.innerText = `答對了！標準策略是【${map[correctAns]}】`;
+            fb.style.background = "rgba(41, 182, 246, 0.2)"; fb.style.color = "#81d4fa";
+            fb.innerText = `答對了！標準策略為【${map[correctAns]}】`;
         }
     }
-
-    let triggeredBust = false;
 
     if (choice === 'UR') {
         currentHand.isDone = true; currentHand.isSurrendered = true; moveToNextHand(); 
     } else if (choice === 'H') {
+        playCardDealSound();
         currentHand.cards.push(drawCardFromCSM());
         const a = getHandAnalysis(currentHand);
-        
-        if (a.sum >= 21) {
-            if (a.sum > 21) triggeredBust = true;
-            currentHand.isDone = true;
-	    moveToNextHand();
-        } else if (a.sum === 21) { currentHand.isDone = true; moveToNextHand(); }
+        if (a.sum >= 21) { currentHand.isDone = true; moveToNextHand(); }
     } else if (choice === 'S') {
         currentHand.isDone = true; moveToNextHand();
     } else if (choice === 'D') {
+        playCardDealSound();
         if (currentTrainingMode === 5) { bankroll -= currentHand.bet; currentHand.bet *= 2; }
         currentHand.cards.push(drawCardFromCSM()); 
-        if (getHandAnalysis(currentHand).sum > 21) triggeredBust = true;
         currentHand.isDone = true; moveToNextHand();
     } else if (choice === 'P') {
+        playCardDealSound();
         if (playerHands.length >= 4) return;
         if (currentTrainingMode === 5) { bankroll -= currentHand.bet; }
         
@@ -740,9 +773,12 @@ function handleAction(choice) {
     updateUI();
 }
 
-function createCardHTML(c) {
+
+// 支援傳入 noAnimate 參數，若為舊牌則寫入 'animation: none !important;' 關閉動畫
+function createCardHTML(c, delayIndex = 0, noAnimate = false) {
     if (!c) return '';
-    return `<div class="card ${c.r ? 'red' : ''}"><div>${c.d}</div><div class="card-suit">${c.s}</div></div>`;
+    let animStyle = noAnimate ? 'animation: none !important;' : `animation-delay: ${delayIndex * 0.1}s`;
+    return `<div class="card ${c.r ? 'red' : ''}" style="${animStyle}"><div>${c.d}</div><div class="card-suit">${c.s}</div></div>`;
 }
 
 function updateUI() {
@@ -751,21 +787,42 @@ function updateUI() {
     document.getElementById('accuracy').innerText = total === 0 ? "0%" : Math.round((correct / total) * 100) + "%";
     document.getElementById('bankroll').innerText = bankroll;
 
+    // ======== 莊家手牌渲染 ========
     let dCardsHTML = "";
+    let dealerNewIndex = 0; // 用來計算莊家「新牌」的動畫延遲順序
     if (dealerHand) {
         if (currentTrainingMode === 5) {
-            if (isRoundOver) dCardsHTML = dealerHand.cards.map(c => createCardHTML(c)).join('');
-            else dCardsHTML = createCardHTML(dealerCard) + `<div class="card card-back"></div>`;
+            if (isRoundOver) {
+                dCardsHTML = dealerHand.cards.map(c => {
+                    let delay = c.isDealt ? 0 : (dealerNewIndex++);
+                    let html = createCardHTML(c, delay, c.isDealt);
+                    c.isDealt = true; // 標記為已經發過
+                    return html;
+                }).join('');
+            } else {
+                let delay0 = dealerCard.isDealt ? 0 : (dealerNewIndex++);
+                let html0 = createCardHTML(dealerCard, delay0, dealerCard.isDealt);
+                dealerCard.isDealt = true;
+                
+                let holeCard = dealerHand.cards[1];
+                let delay1 = holeCard && holeCard.isDealt ? 0 : (dealerNewIndex++);
+                let animStyle = holeCard && holeCard.isDealt ? 'animation: none !important;' : `animation-delay: ${delay1 * 0.1}s`;
+                let html1 = `<div class="card card-back" style="${animStyle}"></div>`;
+                if(holeCard) holeCard.isDealt = true;
+                
+                dCardsHTML = html0 + html1;
+            }
         } else {
-            dCardsHTML = createCardHTML(dealerCard);
+            let delay0 = dealerCard.isDealt ? 0 : (dealerNewIndex++);
+            dCardsHTML = createCardHTML(dealerCard, delay0, dealerCard.isDealt);
+            dealerCard.isDealt = true;
         }
     }
     document.getElementById('dealer-cards').innerHTML = dCardsHTML;
 
+    // ======== 玩家手牌渲染 ========
     const container = document.getElementById('player-hands-container');
     container.innerHTML = "";
-    
-    // ======== 新增：取得點數顯示開關狀態 ========
     const showPoints = document.getElementById('point-toggle').checked;
     
     playerHands.forEach((hand, idx) => {
@@ -779,34 +836,36 @@ function updateUI() {
         if (!isBJ && val.sum > 21) txt = `爆牌 (${val.sum})`;
         if (hand.isSurrendered) txt = "已投降";
 
-        // 如果關閉了點數顯示，就將一般點數隱藏
         if (!showPoints) {
-            if (isBJ) {
-                txt = "Blackjack!";
-            } else if (hand.isSurrendered) {
-                txt = "已投降";
-            } else if (val.sum > 21) {
-                txt = "爆牌！"; // 隱藏具體爆了多少點，模擬賭場氛圍
-            } else {
-                txt = "* * * *"; 
-            }
+            if (isBJ) txt = "Blackjack!";
+            else if (hand.isSurrendered) txt = "已投降";
+            else if (val.sum > 21) txt = "爆牌！"; 
+            else txt = "* * * *"; 
         }
-        // =======================================
 
         const box = document.createElement('div');
         box.className = `player-hand-box ${isActive ? 'active' : ''}`;
         
-        let betDisplay = currentTrainingMode === 5 ? `<div style="font-size:0.8rem;color:#81c784;margin-bottom:3px;">下注: $${hand.bet}</div>` : "";
+        let betDisplay = currentTrainingMode === 5 ? `<div style="font-size:0.8rem;color:#a5d6a7;margin-bottom:6px;">下注: $${hand.bet}</div>` : "";
+
+        let playerNewIndex = 0; // 用來計算玩家「新牌」的動畫延遲順序
+        let cardsHTML = hand.cards.map(c => {
+            let delay = c.isDealt ? 0 : (playerNewIndex++);
+            let html = createCardHTML(c, delay, c.isDealt);
+            c.isDealt = true; // 標記為已經發過
+            return html;
+        }).join('');
 
         box.innerHTML = `
-            <div style="font-size:0.8rem;color:var(--gold);margin-bottom:5px;display:${playerHands.length>1?'block':'none'}">第 ${idx+1} 門 ${isActive?'(操作中)':''}</div>
+            <div style="font-size:0.8rem;color:var(--gold);margin-bottom:6px;display:${playerHands.length>1?'block':'none'}">第 ${idx+1} 門 ${isActive?'(操作中)':''}</div>
             ${betDisplay}
-            <div class="cards-display">${hand.cards.map(c=>createCardHTML(c)).join('')}</div>
-            <div style="font-size:0.9rem;margin-top:5px;font-weight:bold;color:${isBJ?'var(--gold)':(val.sum>21||hand.isSurrendered?'#ef9a9a':'#fff')}">${txt}</div>
+            <div class="cards-display">${cardsHTML}</div>
+            <div style="font-size:1rem;margin-top:10px;font-weight:bold;letter-spacing:1px;color:${isBJ?'var(--gold)':(val.sum>21||hand.isSurrendered?'#ef9a9a':'#fff')}">${txt}</div>
         `;
         container.appendChild(box);
     });
 
+    // ======== 控制區按鈕狀態更新 ========
     if (isRoundOver) {
         document.getElementById('btn-hit').disabled = true;
         document.getElementById('btn-stand').disabled = true;
@@ -828,57 +887,41 @@ function updateUI() {
         document.getElementById('btn-split').disabled = !canSplit;
         
         let canSurrender = (cur.cards.length === 2 && playerHands.length === 1);
-        if (dealerCard && dealerCard.d === 'A') {
-            canSurrender = false;
-        }
+        if (dealerCard && dealerCard.d === 'A') canSurrender = false;
         document.getElementById('btn-surrender').disabled = !canSurrender;
     }
 }
 
-// ======== 新手教學彈窗控制函式 ========
 function openGuide() {
     const modal = document.getElementById('guide-modal');
     modal.style.display = 'flex';
-    // 觸發重繪以啟用動畫
-    setTimeout(() => {
-        modal.classList.add('show');
-    }, 10);
+    setTimeout(() => modal.classList.add('show'), 10);
 }
 
 function closeGuide(event) {
     const modal = document.getElementById('guide-modal');
     modal.classList.remove('show');
-    setTimeout(() => {
-        modal.style.display = 'none';
-    }, 300); // 配合 CSS 動畫時間
+    setTimeout(() => modal.style.display = 'none', 300); 
 }
-// =======================================
 
 document.addEventListener('keydown', function(e) {
-    // 若正在顯示彈出視窗，則不處理遊戲快捷鍵
     const modal = document.getElementById('guide-modal');
     if (modal && modal.style.display === 'flex') return;
 
     const key = e.key.toLowerCase();
 
-    // 獨立攔截空白鍵
     if (key === ' ') {
-        // 永遠阻止空白鍵的預設行為（防止誤觸發留有焦點的按鈕，或造成畫面捲動）
         e.preventDefault(); 
-        
-        // 嚴格限制：只有在「回合已完全結束」的狀態下，空白鍵才能觸發發牌
         if (isRoundOver) {
             const btnNext = document.getElementById('btn-next');
             if (btnNext) btnNext.click();
         }
-        return; // 執行完畢直接中斷，不往下走
+        return; 
     }
     
     const clickIfEnabled = (id) => {
         const btn = document.getElementById(id);
-        if (btn && !btn.disabled && btn.style.display !== 'none') {
-            btn.click();
-        }
+        if (btn && !btn.disabled && btn.style.display !== 'none') btn.click();
     };
 
     if (key === 'a') clickIfEnabled('btn-hit');
