@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0050 投資策略蒙地卡羅隨機漫步模擬器 (五合一完整版)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 24px;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Tabs Style */
+        .tabs {
+            display: flex;
+            background-color: #edf2f7;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            flex: 1 1 180px;
+            padding: 12px;
+            border: none;
+            background: none;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .tab-btn.active {
+            background-color: var(--card-bg);
+            color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Layout Panels */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+
+        @media (min-width: 768px) {
+            .grid-layout { grid-template-columns: 360px 1fr; }
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        /* Form Controls */
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-wrapper input:focus { border-color: var(--primary-color); }
+        .input-unit {
+            position: absolute;
+            right: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .highlight-input {
+            background-color: #f0fdf4 !important;
+            border-color: #86efac !important;
+        }
+
+        /* Button Groups */
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-run {
+            flex: 1;
+            padding: 10px 5px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-run:hover { background-color: var(--primary-hover); }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: var(--bg-color);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+        .stat-value { font-size: 16px; font-weight: 700; }
+        .stat-value.p90 { color: var(--success); }
+        .stat-value.p50 { color: var(--primary-color); }
+        .stat-value.p10 { color: var(--danger); }
+        .stat-value.danger { color: var(--danger); }
+
+        /* Chart Canvas wrapper */
+        .chart-container {
+            width: 100%;
+            background: #ffffff;
+            position: relative;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+            background: #ffffff;
+            display: block;
+        }
+
+        .description-box {
+            margin-top: 15px;
+            font-size: 13px;
+            color: var(--text-muted);
+            background-color: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>0050 投資策略蒙地卡羅隨機漫步模擬器</h1>
+        <p>基於台股歷史波動率特性，可動態執行 1 萬至 10 萬次平行時空模擬，精確探索各種情境的資產分佈與破產風險。</p>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('sc1')">情境 1：每月定期定額</button>
+        <button class="tab-btn" onclick="switchTab('sc2')">情境 2：單筆一次投入</button>
+        <button class="tab-btn" onclick="switchTab('sc3')">情境 3：一次投入後每月固定領</button>
+        <button class="tab-btn" onclick="switchTab('sc4')">情境 4：貸款套利</button>
+        <button class="tab-btn" onclick="switchTab('sc5')">情境 5：貸款+定期定額</button>
+    </div>
+
+    <div id="panel-sc1" class="panel active">
+        <div class="grid-layout">
+            <div class="card">
+                <div class="card-title">情境 1 參數設定 (定期定額)</div>
+                <div class="form-group"><label>每月定期定額金額</label><div class="input-wrapper"><input type="number" id="sc1-monthly-amt" value="10000" min="1000"><span class="input-unit">元</span></div></div>
+                <div class="form-group"><label>預設年化報酬率</label><div class="input-wrapper"><input type="number" id="sc1-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>預設投資年限</label><div class="input-wrapper"><input type="number" id="sc1-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
+                <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc1-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="button-group">
+                    <button class="btn-run" onclick="runScenario1(10000)">1萬次模擬</button><button class="btn-run" onclick="runScenario1(30000)">3萬次模擬</button>
+                    <button class="btn-run" onclick="runScenario1(50000)">5萬次模擬</button><button class="btn-run" onclick="runScenario1(100000)">10萬次模擬</button>
+                </div>
+                <div class="description-box"><strong>說明：</strong><br>初始資金為 0，每個月固定時間加入資金。透過分批買進攤平持有成本。</div>
+            </div>
+            <div class="card">
+                <div class="card-title">模擬資產走勢分佈圖</div>
+                <div class="chart-container"><canvas id="chart-sc1" width="800" height="400"></canvas></div>
+                <div class="card-title" style="margin-top: 25px;">統計模擬結果 (<span id="sc1-sim-count-label">10,000</span> 次收斂結果)</div>
+                <div class="stats-grid">
+                    <div class="stat-box"><div class="stat-label">總投入本金</div><div class="stat-value" id="sc1-total-principal">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P90 樂觀高點</div><div class="stat-value p90" id="sc1-p90">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P50 中位數</div><div class="stat-value p50" id="sc1-p50">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P10 保守低點</div><div class="stat-value p10" id="sc1-p10">-</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="panel-sc2" class="panel">
+        <div class="grid-layout">
+            <div class="card">
+                <div class="card-title">情境 2 參數設定 (單筆投入)</div>
+                <div class="form-group"><label>單筆投入總本金</label><div class="input-wrapper"><input type="number" id="sc2-capital" value="1200000" min="10000"><span class="input-unit">元</span></div></div>
+                <div class="form-group"><label>預設年化報酬率</label><div class="input-wrapper"><input type="number" id="sc2-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>預設投資年限</label><div class="input-wrapper"><input type="number" id="sc2-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
+                <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc2-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="button-group">
+                    <button class="btn-run" onclick="runScenario2(10000)">1萬次模擬</button><button class="btn-run" onclick="runScenario2(30000)">3萬次模擬</button>
+                    <button class="btn-run" onclick="runScenario2(50000)">5萬次模擬</button><button class="btn-run" onclick="runScenario2(100000)">10萬次模擬</button>
+                </div>
+                <div class="description-box"><strong>說明：</strong><br>期初將一筆資金全數投入 0050。完全仰賴市場長期趨勢發揮複利。</div>
+            </div>
+            <div class="card">
+                <div class="card-title">模擬資產走勢分佈圖</div>
+                <div class="chart-container"><canvas id="chart-sc2" width="800" height="400"></canvas></div>
+                <div class="card-title" style="margin-top: 25px;">統計模擬結果 (<span id="sc2-sim-count-label">10,000</span> 次收斂結果)</div>
+                <div class="stats-grid">
+                    <div class="stat-box"><div class="stat-label">總投入本金</div><div class="stat-value" id="sc2-total-principal">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P90 樂觀期末淨資產</div><div class="stat-value p90" id="sc2-p90">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P50 中位數期末淨資產</div><div class="stat-value p50" id="sc2-p50">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P10 保守期末淨資產</div><div class="stat-value p10" id="sc2-p10">-</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="panel-sc3" class="panel">
+        <div class="grid-layout">
+            <div class="card">
+                <div class="card-title">情境 3 參數設定 (單筆投入後提領)</div>
+                <div class="form-group"><label>期初單筆投入本金</label><div class="input-wrapper"><input type="number" id="sc3-capital" value="1200000" min="10000"><span class="input-unit">元</span></div></div>
+                
+                <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 15px;">
+                    <div style="font-size: 12px; color: #64748b; margin-bottom: 8px; text-align: center;">👇 下方兩欄位會互相連動計算 👇</div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>每月提領生活費</label>
+                        <div class="input-wrapper"><input type="number" id="sc3-monthly-withdrawal" value="5000" class="highlight-input"><span class="input-unit">元</span></div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>年提領率 (4%法則參考)</label>
+                        <div class="input-wrapper"><input type="number" id="sc3-withdrawal-rate" value="5" step="0.1" class="highlight-input"><span class="input-unit">%</span></div>
+                    </div>
+                </div>
+
+                <div class="form-group"><label>預設年化報酬率</label><div class="input-wrapper"><input type="number" id="sc3-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>模擬提領年限</label><div class="input-wrapper"><input type="number" id="sc3-years" value="20" min="1" max="60"><span class="input-unit">年</span></div></div>
+                <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc3-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="button-group">
+                    <button class="btn-run" onclick="runScenario3(10000)">1萬次模擬</button><button class="btn-run" onclick="runScenario3(30000)">3萬次模擬</button>
+                    <button class="btn-run" onclick="runScenario3(50000)">5萬次模擬</button><button class="btn-run" onclick="runScenario3(100000)">10萬次模擬</button>
+                </div>
+                <div class="description-box"><strong>說明：</strong><br>退休金/生活費提領模擬。期初投入一筆錢後，每個月底固定賣出份額換取生活費。若提早歸零代表破產(順序風險)。</div>
+            </div>
+            <div class="card">
+                <div class="card-title">模擬資產走勢分佈圖</div>
+                <div class="chart-container"><canvas id="chart-sc3" width="800" height="400"></canvas></div>
+                <div class="card-title" style="margin-top: 25px;">統計模擬結果 (<span id="sc3-sim-count-label">10,000</span> 次收斂結果)</div>
+                <div class="stats-grid">
+                    <div class="stat-box"><div class="stat-label">每月固定提領</div><div class="stat-value" id="sc3-out-monthly">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P90 樂觀期末淨資產</div><div class="stat-value p90" id="sc3-p90">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P50 中位數期末淨資產</div><div class="stat-value p50" id="sc3-p50">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P10 保守期末淨資產</div><div class="stat-value p10" id="sc3-p10">-</div></div>
+                </div>
+                <div class="stats-grid" style="margin-top: 15px;">
+                    <div class="stat-box" style="grid-column: 1 / -1; background-color: #fff5f5; border-color: #feb2b2;">
+                        <div class="stat-label" style="color: #c53030; font-weight: bold;">模擬提早破產機率 (錢被提領光，撐不到設定年限)</div>
+                        <div class="stat-value danger" id="sc3-ruin-rate">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="panel-sc4" class="panel">
+        <div class="grid-layout">
+            <div class="card">
+                <div class="card-title">情境 4 參數設定 (貸款套利)</div>
+                <div class="form-group"><label>貸款總金額</label><div class="input-wrapper"><input type="number" id="sc4-loan-amt" value="1200000" min="10000"><span class="input-unit">元</span></div></div>
+                <div class="form-group"><label>貸款年利率</label><div class="input-wrapper"><input type="number" id="sc4-loan-rate" value="2.5" step="0.01"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>貸款年限</label><div class="input-wrapper"><input type="number" id="sc4-loan-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
+                <div class="form-group"><label>0050 預設年化報酬率</label><div class="input-wrapper"><input type="number" id="sc4-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc4-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="button-group">
+                    <button class="btn-run" onclick="runScenario4(10000)">1萬次模擬</button><button class="btn-run" onclick="runScenario4(30000)">3萬次模擬</button>
+                    <button class="btn-run" onclick="runScenario4(50000)">5萬次模擬</button><button class="btn-run" onclick="runScenario4(100000)">10萬次模擬</button>
+                </div>
+                <div class="description-box"><strong>說明：</strong><br>期初將貸款一次投入。每個月從庫存中自動賣出扣減房貸/信貸本息。若提早歸零則判定破產。</div>
+            </div>
+            <div class="card">
+                <div class="card-title">模擬資產走勢分佈圖</div>
+                <div class="chart-container"><canvas id="chart-sc4" width="800" height="400"></canvas></div>
+                <div class="card-title" style="margin-top: 25px;">統計模擬結果 (<span id="sc4-sim-count-label">10,000</span> 次收斂結果)</div>
+                <div class="stats-grid">
+                    <div class="stat-box"><div class="stat-label">每月需攤還貸款</div><div class="stat-value" id="sc4-monthly-pay">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P90 樂觀期末淨資產</div><div class="stat-value p90" id="sc4-p90">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P50 中位數期末淨資產</div><div class="stat-value p50" id="sc4-p50">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P10 保守期末淨資產</div><div class="stat-value p10" id="sc4-p10">-</div></div>
+                </div>
+                <div class="stats-grid" style="margin-top: 15px;">
+                    <div class="stat-box" style="grid-column: 1 / -1; background-color: #fff5f5; border-color: #feb2b2;">
+                        <div class="stat-label" style="color: #c53030; font-weight: bold;">模擬破產/斷頭機率 (資產提早歸零但貸款尚未還完)</div>
+                        <div class="stat-value danger" id="sc4-ruin-rate">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="panel-sc5" class="panel">
+        <div class="grid-layout">
+            <div class="card">
+                <div class="card-title">情境 5 參數設定 (貸款 + 定期定額)</div>
+                <div class="form-group"><label>貸款總金額</label><div class="input-wrapper"><input type="number" id="sc5-loan-amt" value="1200000" min="10000"><span class="input-unit">元</span></div></div>
+                <div class="form-group"><label>貸款年利率</label><div class="input-wrapper"><input type="number" id="sc5-loan-rate" value="2.5" step="0.01"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>貸款年限</label><div class="input-wrapper"><input type="number" id="sc5-loan-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
+                <div class="form-group"><label>每月【額外】定期定額金額</label><div class="input-wrapper"><input type="number" id="sc5-monthly-amt" value="10000" min="0"><span class="input-unit">元</span></div></div>
+                <div class="form-group"><label>0050 預設年化報酬率</label><div class="input-wrapper"><input type="number" id="sc5-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc5-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="button-group">
+                    <button class="btn-run" onclick="runScenario5(10000)">1萬次模擬</button><button class="btn-run" onclick="runScenario5(30000)">3萬次模擬</button>
+                    <button class="btn-run" onclick="runScenario5(50000)">5萬次模擬</button><button class="btn-run" onclick="runScenario5(100000)">10萬次模擬</button>
+                </div>
+                <div class="description-box"><strong>說明：</strong><br>進階混合策略。每個月底除了扣除貸款本息外，還會強制注入額外的定期定額資金作為緩衝防護網。</div>
+            </div>
+            <div class="card">
+                <div class="card-title">模擬資產走勢分佈圖</div>
+                <div class="chart-container"><canvas id="chart-sc5" width="800" height="400"></canvas></div>
+                <div class="card-title" style="margin-top: 25px;">統計模擬結果 (<span id="sc5-sim-count-label">10,000</span> 次收斂結果)</div>
+                <div class="stats-grid">
+                    <div class="stat-box"><div class="stat-label">每月需攤還貸款</div><div class="stat-value" id="sc5-monthly-pay">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P90 樂觀期末淨資產</div><div class="stat-value p90" id="sc5-p90">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P50 中位數期末淨資產</div><div class="stat-value p50" id="sc5-p50">-</div></div>
+                    <div class="stat-box"><div class="stat-label">P10 保守期末淨資產</div><div class="stat-value p10" id="sc5-p10">-</div></div>
+                </div>
+                <div class="stats-grid" style="margin-top: 15px;">
+                    <div class="stat-box" style="grid-column: 1 / -1; background-color: #f0fdf4; border-color: #bbf7d0;">
+                        <div class="stat-label" style="color: #166534; font-weight: bold;">模擬破產/斷頭機率 (定期定額能大幅抵禦此風險)</div>
+                        <div class="stat-value" id="sc5-ruin-rate" style="font-size: 24px; color: #166534;">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 綁定情境3雙向計算邏輯
+    function initScenario3Sync() {
+        const capitalInput = document.getElementById('sc3-capital');
+        const monthlyInput = document.getElementById('sc3-monthly-withdrawal');
+        const rateInput = document.getElementById('sc3-withdrawal-rate');
+
+        function updateRate() {
+            let capital = parseFloat(capitalInput.value) || 0;
+            let monthly = parseFloat(monthlyInput.value) || 0;
+            if (capital > 0) {
+                let rate = ((monthly * 12) / capital) * 100;
+                rateInput.value = rate.toFixed(2);
+            }
+        }
+
+        function updateMonthly() {
+            let capital = parseFloat(capitalInput.value) || 0;
+            let rate = parseFloat(rateInput.value) || 0;
+            let monthly = (capital * (rate / 100)) / 12;
+            monthlyInput.value = Math.round(monthly);
+        }
+
+        capitalInput.addEventListener('input', updateMonthly);
+        rateInput.addEventListener('input', updateMonthly);
+        monthlyInput.addEventListener('input', updateRate);
+    }
+
+    function switchTab(type) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+        
+        let index = parseInt(type.replace('sc', '')) - 1;
+        document.querySelectorAll('.tab-btn')[index].classList.add('active');
+        document.getElementById('panel-' + type).classList.add('active');
+    }
+
+    function randn_bm() {
+        let u = 0, v = 0;
+        while(u === 0) u = Math.random(); 
+        while(v === 0) v = Math.random();
+        return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    function formatCurrency(val) {
+        if (val <= 0) return "0 元";
+        return Math.round(val).toLocaleString('zh-TW') + ' 元';
+    }
+
+    function drawMonteCarloChart(canvasId, paths, totalMonths, p10, p50, p90) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+        
+        const padding = { top: 30, right: 150, bottom: 40, left: 90 };
+        let sortedPaths = [...paths].sort((a, b) => a[totalMonths] - b[totalMonths]);
+        
+        let p95Path = sortedPaths[Math.floor(sortedPaths.length * 0.95)];
+        let maxVal = 0;
+        p95Path.forEach(v => { if (v > maxVal) maxVal = v; });
+        maxVal = maxVal * 1.1; 
+        if (maxVal === 0) maxVal = 1;
+        
+        function getX(m) { return padding.left + (m / totalMonths) * (width - padding.left - padding.right); }
+        function getY(v) { return height - padding.bottom - (v / maxVal) * (height - padding.top - padding.bottom); }
+        
+        ctx.strokeStyle = '#f1f5f9';
+        ctx.lineWidth = 1;
+        ctx.font = '11px sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        
+        for (let i = 0; i <= 5; i++) {
+            let val = (maxVal / 5) * i;
+            let y = getY(val);
+            ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(width - padding.right, y); ctx.stroke();
+            ctx.textAlign = 'right'; ctx.fillText(formatCurrency(val), padding.left - 10, y + 4);
+        }
+        
+        let totalYears = totalMonths / 12;
+        let yearStep = Math.max(1, Math.round(totalYears / 5));
+        for (let y = 0; y <= totalYears; y += yearStep) {
+            let x = getX(y * 12);
+            ctx.textAlign = 'center'; ctx.fillText(y + ' 年', x, height - padding.bottom + 20);
+        }
+        
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(37, 99, 235, 0.03)';
+        const sampleStep = Math.max(1, Math.floor(paths.length / 200));
+        for (let i = 0; i < paths.length; i += sampleStep) {
+            let path = sortedPaths[i]; 
+            ctx.beginPath(); ctx.moveTo(getX(0), getY(path[0]));
+            for (let m = 1; m <= totalMonths; m++) { ctx.lineTo(getX(m), getY(path[m])); }
+            ctx.stroke();
+        }
+        
+        highlightLine(ctx, sortedPaths[Math.floor(sortedPaths.length * 0.9)], totalMonths, '#10b981', 'P90 樂觀高點', getX, getY, width, padding);
+        highlightLine(ctx, sortedPaths[Math.floor(sortedPaths.length * 0.5)], totalMonths, '#2563eb', 'P50 中位數', getX, getY, width, padding);
+        highlightLine(ctx, sortedPaths[Math.floor(sortedPaths.length * 0.1)], totalMonths, '#ef4444', 'P10 保守低點', getX, getY, width, padding);
+    }
+
+    function highlightLine(ctx, path, totalMonths, color, label, getX, getY, width, padding) {
+        ctx.lineWidth = 2.5; ctx.strokeStyle = color; ctx.beginPath(); ctx.moveTo(getX(0), getY(path[0]));
+        for (let m = 1; m <= totalMonths; m++) { ctx.lineTo(getX(m), getY(path[m])); }
+        ctx.stroke();
+        ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.font = 'bold 11px sans-serif';
+        let labelY = getY(path[totalMonths]) + 4;
+        if (labelY < padding.top) labelY = padding.top;
+        ctx.fillText(label, width - padding.right + 8, labelY);
+    }
+
+    // 情境 1
+    function runScenario1(simPaths) {
+        document.getElementById('sc1-sim-count-label').innerText = simPaths.toLocaleString('zh-TW');
+        const monthlyAmt = parseFloat(document.getElementById('sc1-monthly-amt').value);
+        const annualRet = parseFloat(document.getElementById('sc1-annual-ret').value) / 100;
+        const years = parseInt(document.getElementById('sc1-years').value);
+        const volatility = parseFloat(document.getElementById('sc1-volatility').value) / 100;
+        
+        const totalMonths = years * 12; const daysPerYear = 240; const daysPerMonth = 20; 
+        const dailyDrift = (annualRet - 0.5 * volatility * volatility) / daysPerYear;
+        const dailyVol = volatility / Math.sqrt(daysPerYear);
+        
+        let allPaths = []; let finalValues = [];
+        for (let p = 0; p < simPaths; p++) {
+            let balance = 0; let pathHistory = [balance];
+            for (let m = 1; m <= totalMonths; m++) {
+                balance += monthlyAmt;
+                for (let d = 0; d < daysPerMonth; d++) { balance = balance * Math.exp(dailyDrift + dailyVol * randn_bm()); }
+                pathHistory.push(balance);
+            }
+            allPaths.push(pathHistory); finalValues.push(balance);
+        }
+        finalValues.sort((a, b) => a - b);
+        document.getElementById('sc1-total-principal').innerText = formatCurrency(monthlyAmt * totalMonths);
+        document.getElementById('sc1-p90').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.9)]);
+        document.getElementById('sc1-p50').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.5)]);
+        document.getElementById('sc1-p10').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.1)]);
+        drawMonteCarloChart('chart-sc1', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
+    }
+
+    // 情境 2
+    function runScenario2(simPaths) {
+        document.getElementById('sc2-sim-count-label').innerText = simPaths.toLocaleString('zh-TW');
+        const capital = parseFloat(document.getElementById('sc2-capital').value);
+        const annualRet = parseFloat(document.getElementById('sc2-annual-ret').value) / 100;
+        const years = parseInt(document.getElementById('sc2-years').value);
+        const volatility = parseFloat(document.getElementById('sc2-volatility').value) / 100;
+        
+        const totalMonths = years * 12; const daysPerYear = 240; const daysPerMonth = 20; 
+        const dailyDrift = (annualRet - 0.5 * volatility * volatility) / daysPerYear;
+        const dailyVol = volatility / Math.sqrt(daysPerYear);
+        
+        let allPaths = []; let finalValues = [];
+        for (let p = 0; p < simPaths; p++) {
+            let balance = capital; let pathHistory = [balance];
+            for (let m = 1; m <= totalMonths; m++) {
+                for (let d = 0; d < daysPerMonth; d++) { balance = balance * Math.exp(dailyDrift + dailyVol * randn_bm()); }
+                pathHistory.push(balance);
+            }
+            allPaths.push(pathHistory); finalValues.push(balance);
+        }
+        finalValues.sort((a, b) => a - b);
+        document.getElementById('sc2-total-principal').innerText = formatCurrency(capital);
+        document.getElementById('sc2-p90').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.9)]);
+        document.getElementById('sc2-p50').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.5)]);
+        document.getElementById('sc2-p10').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.1)]);
+        drawMonteCarloChart('chart-sc2', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
+    }
+
+    // 情境 3 (新增：單筆投入後每月提領)
+    function runScenario3(simPaths) {
+        document.getElementById('sc3-sim-count-label').innerText = simPaths.toLocaleString('zh-TW');
+        const capital = parseFloat(document.getElementById('sc3-capital').value);
+        const monthlyWithdrawal = parseFloat(document.getElementById('sc3-monthly-withdrawal').value);
+        const annualRet = parseFloat(document.getElementById('sc3-annual-ret').value) / 100;
+        const years = parseInt(document.getElementById('sc3-years').value);
+        const volatility = parseFloat(document.getElementById('sc3-volatility').value) / 100;
+        
+        const totalMonths = years * 12; const daysPerYear = 240; const daysPerMonth = 20; 
+        const dailyDrift = (annualRet - 0.5 * volatility * volatility) / daysPerYear;
+        const dailyVol = volatility / Math.sqrt(daysPerYear);
+        
+        let allPaths = []; let finalValues = []; let ruinCount = 0;
+        for (let p = 0; p < simPaths; p++) {
+            let balance = capital; let pathHistory = [balance]; let isRuin = false;
+            for (let m = 1; m <= totalMonths; m++) {
+                for (let d = 0; d < daysPerMonth; d++) {
+                    if (balance > 0) { balance = balance * Math.exp(dailyDrift + dailyVol * randn_bm()); }
+                    else { balance = 0; isRuin = true; }
+                }
+                
+                // 每月提領生活費
+                if (!isRuin) {
+                    balance -= monthlyWithdrawal;
+                    if (balance <= 0) { balance = 0; isRuin = true; }
+                } else {
+                    balance = 0;
+                }
+                pathHistory.push(balance);
+            }
+            if (isRuin) ruinCount++; 
+            allPaths.push(pathHistory); finalValues.push(balance);
+        }
+        finalValues.sort((a, b) => a - b);
+        document.getElementById('sc3-out-monthly').innerText = formatCurrency(monthlyWithdrawal);
+        document.getElementById('sc3-p90').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.9)]);
+        document.getElementById('sc3-p50').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.5)]);
+        document.getElementById('sc3-p10').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.1)]);
+        
+        const ruinRate = (ruinCount / simPaths) * 100;
+        const ruinRateEl = document.getElementById('sc3-ruin-rate');
+        ruinRateEl.innerText = ruinRate.toFixed(2) + " %";
+        if(ruinRate > 0) { ruinRateEl.style.color = 'var(--danger)'; } 
+        else { ruinRateEl.style.color = '#166534'; }
+
+        drawMonteCarloChart('chart-sc3', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
+    }
+
+    // 情境 4 (原貸款套利)
+    function runScenario4(simPaths) {
+        document.getElementById('sc4-sim-count-label').innerText = simPaths.toLocaleString('zh-TW');
+        const loanAmt = parseFloat(document.getElementById('sc4-loan-amt').value);
+        const loanRate = parseFloat(document.getElementById('sc4-loan-rate').value) / 100;
+        const loanYears = parseInt(document.getElementById('sc4-loan-years').value);
+        const annualRet = parseFloat(document.getElementById('sc4-annual-ret').value) / 100;
+        const volatility = parseFloat(document.getElementById('sc4-volatility').value) / 100;
+        
+        const totalMonths = loanYears * 12; const daysPerYear = 240; const daysPerMonth = 20;
+        let monthlyPayment = loanAmt * ((loanRate/12) * Math.pow(1 + loanRate/12, totalMonths)) / (Math.pow(1 + loanRate/12, totalMonths) - 1);
+        monthlyPayment = Math.round(monthlyPayment); 
+        
+        const dailyDrift = (annualRet - 0.5 * volatility * volatility) / daysPerYear;
+        const dailyVol = volatility / Math.sqrt(daysPerYear);
+        
+        let allPaths = []; let finalValues = []; let ruinCount = 0;
+        for (let p = 0; p < simPaths; p++) {
+            let balance = loanAmt; let pathHistory = [balance]; let isRuin = false;
+            for (let m = 1; m <= totalMonths; m++) {
+                for (let d = 0; d < daysPerMonth; d++) {
+                    if (balance > 0) balance = balance * Math.exp(dailyDrift + dailyVol * randn_bm());
+                    else { balance = 0; isRuin = true; }
+                }
+                if (!isRuin) { 
+                    balance -= monthlyPayment; 
+                    if (balance <= 0) { balance = 0; isRuin = true; } 
+                } else { balance = 0; }
+                pathHistory.push(balance);
+            }
+            if (isRuin) ruinCount++; allPaths.push(pathHistory); finalValues.push(balance);
+        }
+        finalValues.sort((a, b) => a - b);
+        document.getElementById('sc4-monthly-pay').innerText = formatCurrency(monthlyPayment);
+        document.getElementById('sc4-p90').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.9)]);
+        document.getElementById('sc4-p50').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.5)]);
+        document.getElementById('sc4-p10').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.1)]);
+        document.getElementById('sc4-ruin-rate').innerText = ((ruinCount / simPaths) * 100).toFixed(2) + " %";
+        drawMonteCarloChart('chart-sc4', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
+    }
+
+    // 情境 5 (原貸款+定額)
+    function runScenario5(simPaths) {
+        document.getElementById('sc5-sim-count-label').innerText = simPaths.toLocaleString('zh-TW');
+        const loanAmt = parseFloat(document.getElementById('sc5-loan-amt').value);
+        const loanRate = parseFloat(document.getElementById('sc5-loan-rate').value) / 100;
+        const loanYears = parseInt(document.getElementById('sc5-loan-years').value);
+        const monthlyInvest = parseFloat(document.getElementById('sc5-monthly-amt').value);
+        const annualRet = parseFloat(document.getElementById('sc5-annual-ret').value) / 100;
+        const volatility = parseFloat(document.getElementById('sc5-volatility').value) / 100;
+        
+        const totalMonths = loanYears * 12; const daysPerYear = 240; const daysPerMonth = 20;
+        let monthlyPayment = loanAmt * ((loanRate/12) * Math.pow(1 + loanRate/12, totalMonths)) / (Math.pow(1 + loanRate/12, totalMonths) - 1);
+        monthlyPayment = Math.round(monthlyPayment);
+        
+        const dailyDrift = (annualRet - 0.5 * volatility * volatility) / daysPerYear;
+        const dailyVol = volatility / Math.sqrt(daysPerYear);
+        
+        let allPaths = []; let finalValues = []; let ruinCount = 0;
+        for (let p = 0; p < simPaths; p++) {
+            let balance = loanAmt; let pathHistory = [balance]; let isRuin = false;
+            
+            for (let m = 1; m <= totalMonths; m++) {
+                if (!isRuin) { balance += monthlyInvest; }
+                
+                for (let d = 0; d < daysPerMonth; d++) {
+                    if (balance > 0) balance = balance * Math.exp(dailyDrift + dailyVol * randn_bm());
+                    else { balance = 0; isRuin = true; }
+                }
+                
+                if (!isRuin) {
+                    balance -= monthlyPayment;
+                    if (balance <= 0) { balance = 0; isRuin = true; }
+                } else { balance = 0; }
+                pathHistory.push(balance);
+            }
+            if (isRuin) ruinCount++; allPaths.push(pathHistory); finalValues.push(balance);
+        }
+        
+        finalValues.sort((a, b) => a - b);
+        document.getElementById('sc5-monthly-pay').innerText = formatCurrency(monthlyPayment);
+        document.getElementById('sc5-p90').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.9)]);
+        document.getElementById('sc5-p50').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.5)]);
+        document.getElementById('sc5-p10').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.1)]);
+        
+        const ruinRate = (ruinCount / simPaths) * 100;
+        const ruinRateEl = document.getElementById('sc5-ruin-rate');
+        ruinRateEl.innerText = ruinRate.toFixed(2) + " %";
+        if(ruinRate > 0) { ruinRateEl.style.color = 'var(--danger)'; } 
+        else { ruinRateEl.style.color = '#166534'; }
+        
+        drawMonteCarloChart('chart-sc5', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
+    }
+
+    window.onload = function() {
+        initScenario3Sync();
+        runScenario1(10000); 
+        runScenario2(10000); 
+        runScenario3(10000);
+        runScenario4(10000);
+        runScenario5(10000);
+    };
+</script>
+
+</body>
+</html>
