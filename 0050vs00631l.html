@@ -31,6 +31,7 @@
             color: #7f8c8d;
             line-height: 1.6;
         }
+        
         .control-panel {
             background: #eef2f5;
             padding: 20px;
@@ -49,17 +50,14 @@
             font-size: 14px;
             margin-bottom: 5px;
             color: #34495e;
+            display: flex;
+            align-items: center;
         }
         .input-group input {
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 16px;
-        }
-        .input-group span.note {
-            font-size: 12px;
-            color: #e74c3c;
-            margin-top: 4px;
         }
         .btn-run {
             grid-column: 1 / -1;
@@ -83,7 +81,6 @@
             width: 100%;
         }
 
-        /* --- 新增手機版響應式設計與提示框樣式 --- */
         * { box-sizing: border-box; }
         
         @media (max-width: 768px) {
@@ -150,7 +147,8 @@
     <h1>0050 vs 00631L(正二) 長期投資與價差影響模擬</h1>
     <div class="description">
         本模型採「月遞迴」計算，精確模擬 2 倍槓桿的<strong>波動耗損</strong> (Beta Slippage)。<br>
-        並將期貨價差的影響值，依權重分配：<strong>80% 集中於 7 月</strong>，其餘 20% 均分於另外 11 個月。
+        輸入之「預期年化報酬率」將直接視為<strong>最終複合成長率(CAGR)之中位數目標</strong>。<br>
+        期貨價差影響將依權重分配：<strong>80% 集中於 7 月</strong>，其餘 20% 均分於另外 11 個月。
     </div>
 
     <div class="control-panel">
@@ -252,15 +250,20 @@
                 for (let m = 0; m < 12; m++) {
                     let z = randomNormal();
                     
-                    // 1倍指數 (0050) 的月對數報酬 (Ito's Lemma)
-                    let r50_log = (mu - Math.pow(sigma, 2) / 2) / 12 + sigma * Math.sqrt(1/12) * z;
+                    // 【修正邏輯】：使用者輸入的 mu 視為「幾何複合報酬率(CAGR)」
+                    // 為了讓中位數不受波動耗損影響，我們直接以 mu 作為漂移項基礎。
+                    // 這樣 1倍指數的中位數經過 t 年後會剛好收斂於 e^(mu * t)
+                    let r50_log = (mu) / 12 + sigma * Math.sqrt(1/12) * z;
                     w50 = w50 * Math.exp(r50_log);
 
                     // 2倍槓桿 (00631L) 的月對數報酬
-                    // 理論漂移項為 (2μ - 2σ²)，波動項為 2σ
-                    // 依照修改邏輯：正值為正價差(耗損)，故加上負號；負值為逆價差(紅利)，負負得正。2倍槓桿需自動乘以2。
+                    // 如果 1倍的複合報酬是 mu，2倍槓桿在完美的無耗損情況下複合報酬應為 2*mu。
+                    // 但 2倍槓桿仍需承受額外的波動耗損 (2σ)²/2 - 2*(σ²/2) = σ²。
+                    // 所以 2倍的漂移項為 2*mu - σ²。
+                    // 加上使用者輸入的期貨價差影響 spreadEffect。
+                    // 邏輯：正值為正價差(耗損)，故加上負號；負值為逆價差(紅利)，負負得正。2倍槓桿需自動乘以2。
                     let spreadEffect = (-spreadAnnual * 2) * spreadWeights[m];
-                    let r2x_log = (2 * mu - 2 * Math.pow(sigma, 2)) / 12 + 2 * sigma * Math.sqrt(1/12) * z + spreadEffect;
+                    let r2x_log = (2 * mu - Math.pow(sigma, 2)) / 12 + 2 * sigma * Math.sqrt(1/12) * z + spreadEffect;
                     w2x = w2x * Math.exp(r2x_log);
                 }
                 // 紀錄每年年底的資產
