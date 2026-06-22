@@ -280,7 +280,7 @@
         <div class="grid-layout">
             <div class="card">
                 <div class="card-title">情境 2 參數設定 (單筆投入)</div>
-                <div class="form-group"><label>單筆投入總本金</label><div class="input-wrapper"><input type="number" id="sc2-capital" value="1200000" min="10000"><span class="input-unit">元</span></div></div>
+                <div class="form-group"><label>單筆投入總本金</label><div class="input-wrapper"><input type="number" id="sc2-capital" value="2400000" min="10000"><span class="input-unit">元</span></div></div>
                 <div class="form-group"><label>預設年化報酬率 (CAGR)</label><div class="input-wrapper"><input type="number" id="sc2-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="form-group"><label>預設投資年限</label><div class="input-wrapper"><input type="number" id="sc2-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
                 <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc2-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
@@ -308,17 +308,17 @@
         <div class="grid-layout">
             <div class="card">
                 <div class="card-title">情境 3 參數設定 (單筆投入後提領)</div>
-                <div class="form-group"><label>期初單筆投入本金</label><div class="input-wrapper"><input type="number" id="sc3-capital" value="1200000" min="10000"><span class="input-unit">元</span></div></div>
+                <div class="form-group"><label>期初單筆投入本金</label><div class="input-wrapper"><input type="number" id="sc3-capital" value="2400000" min="10000"><span class="input-unit">元</span></div></div>
                 
                 <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 15px;">
                     <div style="font-size: 12px; color: #64748b; margin-bottom: 8px; text-align: center;">👇 下方兩欄位會互相連動計算 👇</div>
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label>每月提領生活費</label>
-                        <div class="input-wrapper"><input type="number" id="sc3-monthly-withdrawal" value="5000" class="highlight-input"><span class="input-unit">元</span></div>
+                        <div class="input-wrapper"><input type="number" id="sc3-monthly-withdrawal" value="8000" class="highlight-input"><span class="input-unit">元</span></div>
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>年提領率 (4%法則參考)</label>
-                        <div class="input-wrapper"><input type="number" id="sc3-withdrawal-rate" value="5" step="0.1" class="highlight-input"><span class="input-unit">%</span></div>
+                        <div class="input-wrapper"><input type="number" id="sc3-withdrawal-rate" value="4" step="0.1" class="highlight-input"><span class="input-unit">%</span></div>
                     </div>
                 </div>
 
@@ -347,6 +347,8 @@
                         <div class="stat-value danger" id="sc3-ruin-rate">-</div>
                     </div>
                 </div>
+                <div class="card-title" style="margin-top: 25px;">破產年份分佈統計圖 (資金歸零發生在第幾年)</div>
+                <div class="chart-container"><canvas id="ruin-chart-sc3" width="800" height="200"></canvas></div>
             </div>
         </div>
     </div>
@@ -355,7 +357,7 @@
         <div class="grid-layout">
             <div class="card">
                 <div class="card-title">情境 4 參數設定 (貸款套利)</div>
-                <div class="form-group"><label>貸款總金額</label><div class="input-wrapper"><input type="number" id="sc4-loan-amt" value="1200000" min="10000"><span class="input-unit">元</span></div></div>
+                <div class="form-group"><label>貸款總金額</label><div class="input-wrapper"><input type="number" id="sc4-loan-amt" value="2400000" min="10000"><span class="input-unit">元</span></div></div>
                 <div class="form-group"><label>貸款年利率</label><div class="input-wrapper"><input type="number" id="sc4-loan-rate" value="2.5" step="0.01"><span class="input-unit">%</span></div></div>
                 <div class="form-group"><label>貸款年限</label><div class="input-wrapper"><input type="number" id="sc4-loan-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
                 <div class="form-group"><label>0050 預設年化報酬率 (CAGR)</label><div class="input-wrapper"><input type="number" id="sc4-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
@@ -382,6 +384,8 @@
                         <div class="stat-value danger" id="sc4-ruin-rate">-</div>
                     </div>
                 </div>
+                <div class="card-title" style="margin-top: 25px;">破產年份分佈統計圖 (資金歸零發生在第幾年)</div>
+                <div class="chart-container"><canvas id="ruin-chart-sc4" width="800" height="200"></canvas></div>
             </div>
         </div>
     </div>
@@ -390,7 +394,7 @@
         <div class="grid-layout">
             <div class="card">
                 <div class="card-title">情境 5 參數設定 (貸款 + 定期定額)</div>
-                <div class="form-group"><label>貸款總金額</label><div class="input-wrapper"><input type="number" id="sc5-loan-amt" value="1200000" min="10000"><span class="input-unit">元</span></div></div>
+                <div class="form-group"><label>貸款總金額</label><div class="input-wrapper"><input type="number" id="sc5-loan-amt" value="2400000" min="10000"><span class="input-unit">元</span></div></div>
                 <div class="form-group"><label>貸款年利率</label><div class="input-wrapper"><input type="number" id="sc5-loan-rate" value="2.5" step="0.01"><span class="input-unit">%</span></div></div>
                 <div class="form-group"><label>貸款年限</label><div class="input-wrapper"><input type="number" id="sc5-loan-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
                 <div class="form-group"><label>每月【額外】定期定額金額</label><div class="input-wrapper"><input type="number" id="sc5-monthly-amt" value="10000" min="0"><span class="input-unit">元</span></div></div>
@@ -418,6 +422,8 @@
                         <div class="stat-value" id="sc5-ruin-rate" style="font-size: 24px; color: #166534;">-</div>
                     </div>
                 </div>
+                <div class="card-title" style="margin-top: 25px;">破產年份分佈統計圖 (資金歸零發生在第幾年)</div>
+                <div class="chart-container"><canvas id="ruin-chart-sc5" width="800" height="200"></canvas></div>
             </div>
         </div>
     </div>
@@ -535,6 +541,80 @@
         ctx.fillText(label, width - padding.right + 8, labelY);
     }
 
+    // 新增繪製斷頭年份直方圖函數
+    function drawRuinHistogram(canvasId, ruinMonths, totalYears, simPaths) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+
+        if (ruinMonths.length === 0) {
+            ctx.fillStyle = '#10b981';
+            ctx.textAlign = 'center';
+            ctx.font = '14px sans-serif';
+            ctx.fillText('恭喜！此情境下無任何模擬路徑發生破產/斷頭', width / 2, height / 2);
+            return;
+        }
+
+        const padding = { top: 30, right: 20, bottom: 30, left: 60 };
+        
+        let yearCounts = new Array(totalYears).fill(0);
+        for (let rm of ruinMonths) {
+            let y = Math.floor((rm - 1) / 12);
+            if (y >= 0 && y < totalYears) {
+                yearCounts[y]++;
+            }
+        }
+
+        let maxCount = Math.max(...yearCounts);
+        let maxPercent = (maxCount / simPaths) * 100;
+
+        if (maxCount === 0) {
+            maxCount = 1;
+            maxPercent = 1;
+        }
+
+        const chartWidth = width - padding.left - padding.right;
+        const chartHeight = height - padding.top - padding.bottom;
+        const barWidth = chartWidth / totalYears;
+
+        // Y Axis background lines
+        ctx.strokeStyle = '#f1f5f9';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+            let y = padding.top + (chartHeight / 4) * i;
+            ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(width - padding.right, y); ctx.stroke();
+            
+            // 將次數轉換為百分比 (例如: 1.50%)
+            let val = (maxPercent - (maxPercent / 4) * i).toFixed(2);
+            ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right'; ctx.font = '11px sans-serif';
+            ctx.fillText(val + '%', padding.left - 10, y + 4);
+        }
+
+        // Draw Bars
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.7)';
+        ctx.strokeStyle = '#ef4444';
+
+        for (let y = 0; y < totalYears; y++) {
+            let count = yearCounts[y];
+            if (count > 0) {
+                let barH = (count / maxCount) * chartHeight;
+                let barX = padding.left + y * barWidth + 2;
+                let barY = height - padding.bottom - barH;
+                let bW = Math.max(1, barWidth - 4);
+                ctx.fillRect(barX, barY, bW, barH);
+                ctx.strokeRect(barX, barY, bW, barH);
+            }
+
+            let step = totalYears > 20 ? Math.ceil(totalYears / 10) : 1;
+            if (y % step === 0 || y === totalYears - 1) {
+                ctx.fillStyle = '#64748b'; ctx.textAlign = 'center';
+                ctx.fillText('第' + (y + 1) + '年', padding.left + y * barWidth + barWidth / 2, height - padding.bottom + 20);
+            }
+        }
+    }
+
     // 情境 1
     function runScenario1(simPaths) {
         document.getElementById('sc1-sim-count-label').innerText = simPaths.toLocaleString('zh-TW');
@@ -615,6 +695,7 @@
         const dailyVol = volatility / Math.sqrt(daysPerYear);
         
         let allPaths = []; let finalValues = []; let ruinCount = 0;
+        let ruinMonths = []; // 紀錄破產發生的月份
         for (let p = 0; p < simPaths; p++) {
             let balance = capital; let pathHistory = [balance]; let isRuin = false;
             for (let m = 1; m <= totalMonths; m++) {
@@ -626,7 +707,7 @@
                 // 每月提領生活費
                 if (!isRuin) {
                     balance -= monthlyWithdrawal;
-                    if (balance <= 0) { balance = 0; isRuin = true; }
+                    if (balance <= 0) { balance = 0; isRuin = true; ruinMonths.push(m); }
                 } else {
                     balance = 0;
                 }
@@ -648,6 +729,7 @@
         else { ruinRateEl.style.color = '#166534'; }
 
         drawMonteCarloChart('chart-sc3', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
+        drawRuinHistogram('ruin-chart-sc3', ruinMonths, years, simPaths);
     }
 
     // 情境 4 (貸款套利)
@@ -668,6 +750,7 @@
         const dailyVol = volatility / Math.sqrt(daysPerYear);
         
         let allPaths = []; let finalValues = []; let ruinCount = 0;
+        let ruinMonths = [];
         for (let p = 0; p < simPaths; p++) {
             let balance = loanAmt; let pathHistory = [balance]; let isRuin = false;
             for (let m = 1; m <= totalMonths; m++) {
@@ -677,7 +760,7 @@
                 }
                 if (!isRuin) { 
                     balance -= monthlyPayment; 
-                    if (balance <= 0) { balance = 0; isRuin = true; } 
+                    if (balance <= 0) { balance = 0; isRuin = true; ruinMonths.push(m); } 
                 } else { balance = 0; }
                 pathHistory.push(balance);
             }
@@ -690,6 +773,7 @@
         document.getElementById('sc4-p10').innerText = formatCurrency(finalValues[Math.floor(simPaths * 0.1)]);
         document.getElementById('sc4-ruin-rate').innerText = ((ruinCount / simPaths) * 100).toFixed(2) + " %";
         drawMonteCarloChart('chart-sc4', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
+        drawRuinHistogram('ruin-chart-sc4', ruinMonths, loanYears, simPaths);
     }
 
     // 情境 5 (貸款+定額)
@@ -711,6 +795,7 @@
         const dailyVol = volatility / Math.sqrt(daysPerYear);
         
         let allPaths = []; let finalValues = []; let ruinCount = 0;
+        let ruinMonths = [];
         for (let p = 0; p < simPaths; p++) {
             let balance = loanAmt; let pathHistory = [balance]; let isRuin = false;
             
@@ -724,7 +809,7 @@
                 
                 if (!isRuin) {
                     balance -= monthlyPayment;
-                    if (balance <= 0) { balance = 0; isRuin = true; }
+                    if (balance <= 0) { balance = 0; isRuin = true; ruinMonths.push(m); }
                 } else { balance = 0; }
                 pathHistory.push(balance);
             }
@@ -744,6 +829,7 @@
         else { ruinRateEl.style.color = '#166534'; }
         
         drawMonteCarloChart('chart-sc5', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
+        drawRuinHistogram('ruin-chart-sc5', ruinMonths, loanYears, simPaths);
     }
 
     window.onload = function() {
