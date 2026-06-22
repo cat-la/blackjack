@@ -253,7 +253,7 @@
             <div class="card">
                 <div class="card-title">情境 1 參數設定 (定期定額)</div>
                 <div class="form-group"><label>每月定期定額金額</label><div class="input-wrapper"><input type="number" id="sc1-monthly-amt" value="10000" min="1000"><span class="input-unit">元</span></div></div>
-                <div class="form-group"><label>預設年化報酬率</label><div class="input-wrapper"><input type="number" id="sc1-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>預設年化報酬率 (CAGR)</label><div class="input-wrapper"><input type="number" id="sc1-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="form-group"><label>預設投資年限</label><div class="input-wrapper"><input type="number" id="sc1-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
                 <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc1-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="button-group">
@@ -281,7 +281,7 @@
             <div class="card">
                 <div class="card-title">情境 2 參數設定 (單筆投入)</div>
                 <div class="form-group"><label>單筆投入總本金</label><div class="input-wrapper"><input type="number" id="sc2-capital" value="1200000" min="10000"><span class="input-unit">元</span></div></div>
-                <div class="form-group"><label>預設年化報酬率</label><div class="input-wrapper"><input type="number" id="sc2-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>預設年化報酬率 (CAGR)</label><div class="input-wrapper"><input type="number" id="sc2-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="form-group"><label>預設投資年限</label><div class="input-wrapper"><input type="number" id="sc2-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
                 <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc2-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="button-group">
@@ -322,7 +322,7 @@
                     </div>
                 </div>
 
-                <div class="form-group"><label>預設年化報酬率</label><div class="input-wrapper"><input type="number" id="sc3-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>預設年化報酬率 (CAGR)</label><div class="input-wrapper"><input type="number" id="sc3-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="form-group"><label>模擬提領年限</label><div class="input-wrapper"><input type="number" id="sc3-years" value="20" min="1" max="60"><span class="input-unit">年</span></div></div>
                 <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc3-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="button-group">
@@ -358,7 +358,7 @@
                 <div class="form-group"><label>貸款總金額</label><div class="input-wrapper"><input type="number" id="sc4-loan-amt" value="1200000" min="10000"><span class="input-unit">元</span></div></div>
                 <div class="form-group"><label>貸款年利率</label><div class="input-wrapper"><input type="number" id="sc4-loan-rate" value="2.5" step="0.01"><span class="input-unit">%</span></div></div>
                 <div class="form-group"><label>貸款年限</label><div class="input-wrapper"><input type="number" id="sc4-loan-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
-                <div class="form-group"><label>0050 預設年化報酬率</label><div class="input-wrapper"><input type="number" id="sc4-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>0050 預設年化報酬率 (CAGR)</label><div class="input-wrapper"><input type="number" id="sc4-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc4-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="button-group">
                     <button class="btn-run" onclick="runScenario4(10000)">1萬次模擬</button><button class="btn-run" onclick="runScenario4(30000)">3萬次模擬</button>
@@ -394,7 +394,7 @@
                 <div class="form-group"><label>貸款年利率</label><div class="input-wrapper"><input type="number" id="sc5-loan-rate" value="2.5" step="0.01"><span class="input-unit">%</span></div></div>
                 <div class="form-group"><label>貸款年限</label><div class="input-wrapper"><input type="number" id="sc5-loan-years" value="20" min="1" max="40"><span class="input-unit">年</span></div></div>
                 <div class="form-group"><label>每月【額外】定期定額金額</label><div class="input-wrapper"><input type="number" id="sc5-monthly-amt" value="10000" min="0"><span class="input-unit">元</span></div></div>
-                <div class="form-group"><label>0050 預設年化報酬率</label><div class="input-wrapper"><input type="number" id="sc5-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
+                <div class="form-group"><label>0050 預設年化報酬率 (CAGR)</label><div class="input-wrapper"><input type="number" id="sc5-annual-ret" value="8" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="form-group"><label>0050 預期年化波動率</label><div class="input-wrapper"><input type="number" id="sc5-volatility" value="16" step="0.1"><span class="input-unit">%</span></div></div>
                 <div class="button-group">
                     <button class="btn-run" onclick="runScenario5(10000)">1萬次模擬</button><button class="btn-run" onclick="runScenario5(30000)">3萬次模擬</button>
@@ -544,7 +544,10 @@
         const volatility = parseFloat(document.getElementById('sc1-volatility').value) / 100;
         
         const totalMonths = years * 12; const daysPerYear = 240; const daysPerMonth = 20; 
-        const dailyDrift = (annualRet - 0.5 * volatility * volatility) / daysPerYear;
+        
+        // 【修正】使用 Math.log(1 + annualRet) 來確保中位數精準貼合設定的年化報酬率 (CAGR)
+        // 因為使用者輸入的 8% 通常已經是扣除波動損耗過後的長期複合成長率，不應再扣除 0.5*vol^2
+        const dailyDrift = Math.log(1 + annualRet) / daysPerYear;
         const dailyVol = volatility / Math.sqrt(daysPerYear);
         
         let allPaths = []; let finalValues = [];
@@ -574,7 +577,9 @@
         const volatility = parseFloat(document.getElementById('sc2-volatility').value) / 100;
         
         const totalMonths = years * 12; const daysPerYear = 240; const daysPerMonth = 20; 
-        const dailyDrift = (annualRet - 0.5 * volatility * volatility) / daysPerYear;
+        
+        // 【修正】確保中位數嚴格吻合 CAGR
+        const dailyDrift = Math.log(1 + annualRet) / daysPerYear;
         const dailyVol = volatility / Math.sqrt(daysPerYear);
         
         let allPaths = []; let finalValues = [];
@@ -594,7 +599,7 @@
         drawMonteCarloChart('chart-sc2', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
     }
 
-    // 情境 3 (新增：單筆投入後每月提領)
+    // 情境 3 (單筆投入後每月提領)
     function runScenario3(simPaths) {
         document.getElementById('sc3-sim-count-label').innerText = simPaths.toLocaleString('zh-TW');
         const capital = parseFloat(document.getElementById('sc3-capital').value);
@@ -604,7 +609,9 @@
         const volatility = parseFloat(document.getElementById('sc3-volatility').value) / 100;
         
         const totalMonths = years * 12; const daysPerYear = 240; const daysPerMonth = 20; 
-        const dailyDrift = (annualRet - 0.5 * volatility * volatility) / daysPerYear;
+        
+        // 【修正】確保中位數嚴格吻合 CAGR
+        const dailyDrift = Math.log(1 + annualRet) / daysPerYear;
         const dailyVol = volatility / Math.sqrt(daysPerYear);
         
         let allPaths = []; let finalValues = []; let ruinCount = 0;
@@ -643,7 +650,7 @@
         drawMonteCarloChart('chart-sc3', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
     }
 
-    // 情境 4 (原貸款套利)
+    // 情境 4 (貸款套利)
     function runScenario4(simPaths) {
         document.getElementById('sc4-sim-count-label').innerText = simPaths.toLocaleString('zh-TW');
         const loanAmt = parseFloat(document.getElementById('sc4-loan-amt').value);
@@ -656,7 +663,8 @@
         let monthlyPayment = loanAmt * ((loanRate/12) * Math.pow(1 + loanRate/12, totalMonths)) / (Math.pow(1 + loanRate/12, totalMonths) - 1);
         monthlyPayment = Math.round(monthlyPayment); 
         
-        const dailyDrift = (annualRet - 0.5 * volatility * volatility) / daysPerYear;
+        // 【修正】確保中位數嚴格吻合 CAGR
+        const dailyDrift = Math.log(1 + annualRet) / daysPerYear;
         const dailyVol = volatility / Math.sqrt(daysPerYear);
         
         let allPaths = []; let finalValues = []; let ruinCount = 0;
@@ -684,7 +692,7 @@
         drawMonteCarloChart('chart-sc4', allPaths, totalMonths, finalValues[Math.floor(simPaths * 0.1)], finalValues[Math.floor(simPaths * 0.5)], finalValues[Math.floor(simPaths * 0.9)]);
     }
 
-    // 情境 5 (原貸款+定額)
+    // 情境 5 (貸款+定額)
     function runScenario5(simPaths) {
         document.getElementById('sc5-sim-count-label').innerText = simPaths.toLocaleString('zh-TW');
         const loanAmt = parseFloat(document.getElementById('sc5-loan-amt').value);
@@ -698,7 +706,8 @@
         let monthlyPayment = loanAmt * ((loanRate/12) * Math.pow(1 + loanRate/12, totalMonths)) / (Math.pow(1 + loanRate/12, totalMonths) - 1);
         monthlyPayment = Math.round(monthlyPayment);
         
-        const dailyDrift = (annualRet - 0.5 * volatility * volatility) / daysPerYear;
+        // 【修正】確保中位數嚴格吻合 CAGR
+        const dailyDrift = Math.log(1 + annualRet) / daysPerYear;
         const dailyVol = volatility / Math.sqrt(daysPerYear);
         
         let allPaths = []; let finalValues = []; let ruinCount = 0;
