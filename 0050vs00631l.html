@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0050 vs 00631L(正二) 長期投資與價差影響模擬</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .description {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+        .control-panel {
+            background: #eef2f5;
+            padding: 20px;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #34495e;
+        }
+        .input-group input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .input-group span.note {
+            font-size: 12px;
+            color: #e74c3c;
+            margin-top: 4px;
+        }
+        .btn-run {
+            grid-column: 1 / -1;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn-run:hover {
+            background-color: #2980b9;
+        }
+        .chart-wrapper {
+            margin-bottom: 50px;
+            position: relative;
+            height: 450px;
+            width: 100%;
+        }
+
+        /* --- 新增手機版響應式設計與提示框樣式 --- */
+        * { box-sizing: border-box; }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            .control-panel { grid-template-columns: 1fr; gap: 10px; }
+            .chart-wrapper { height: 350px; }
+            .input-group input { width: 100%; }
+        }
+
+        .info-icon {
+            display: inline-block;
+            margin-left: 6px;
+            cursor: help;
+            position: relative;
+            font-size: 16px;
+            color: #3498db;
+        }
+        .tooltip-content {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 130%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            max-width: 85vw; /* 確保在手機螢幕上不會超出邊界 */
+            background-color: #fff;
+            color: #333;
+            text-align: left;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            z-index: 100;
+            font-size: 13px;
+            font-weight: normal;
+            transition: opacity 0.2s, visibility 0.2s;
+            line-height: 1.6;
+            pointer-events: none; /* 防止遮擋滑鼠軌跡 */
+        }
+        .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #fff transparent transparent transparent;
+        }
+        /* 支援滑鼠懸浮與手機點擊顯示 */
+        .info-icon:hover .tooltip-content,
+        .info-icon:focus .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>0050 vs 00631L(正二) 長期投資與價差影響模擬</h1>
+    <div class="description">
+        本模型採「月遞迴」計算，精確模擬 2 倍槓桿的<strong>波動耗損</strong> (Beta Slippage)。<br>
+        並將期貨價差的影響值，依權重分配：<strong>80% 集中於 7 月</strong>，其餘 20% 均分於另外 11 個月。
+    </div>
+
+    <div class="control-panel">
+        <div class="input-group">
+            <label>初始資金 (元)</label>
+            <input type="number" id="initWealth" value="1000000" step="100000">
+        </div>
+        <div class="input-group">
+            <label>0050 預期年化報酬率 (%)</label>
+            <input type="number" id="mu" value="8" step="0.5">
+        </div>
+        <div class="input-group">
+            <label>0050 年化波動率 (%)</label>
+            <input type="number" id="sigma" value="15" step="0.5">
+        </div>
+        <div class="input-group">
+            <label>模擬年數 (年)</label>
+            <input type="number" id="years" value="20" step="1">
+        </div>
+        <div class="input-group">
+            <label>
+                期貨正逆價差 (大盤1倍 %)
+                <span class="info-icon" tabindex="0">ⓘ
+                    <div class="tooltip-content">
+                        <strong>📝 填寫數值參考指南：</strong><br>
+                        <span style="color: #e74c3c; font-weight: bold;">正值 = 正價差 (造成耗損)</span><br>
+                        <span style="color: #27ae60; font-weight: bold;">負值 = 逆價差 (產生紅利)</span><br>
+                        <span style="color: #7f8c8d; font-size: 11px;">(正二將自動承受 2 倍影響)</span><br>
+                        <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                            <li>台股每年常態逆價差應為 <strong>-3%</strong>。</li>
+                            <li>因配息由前一年獲利決定，應參考前一年的平均指數。</li>
+                            <li>當指數比前一年減少 2%，逆價差保護可能消失，建議輸入 <strong>0</strong>。</li>
+                            <li>若期貨與現貨「無價差」，則建議輸入 <strong>+2 ~ +3</strong>。</li>
+                            <li>根據2026年5月期現貨正價差 1%，建議輸入 <strong>+3</strong>。</li>
+                        </ul>
+                    </div>
+                </span>
+            </label>
+            <input type="number" id="spread" value="1" step="0.1">
+        </div>
+        <button class="btn-run" onclick="runSimulation()">重新執行蒙地卡羅模擬 (5000次)</button>
+    </div>
+
+    <h2>1. 資產增長比較圖 (中位數 PR50)</h2>
+    <div class="chart-wrapper">
+        <canvas id="wealthChart"></canvas>
+    </div>
+
+    <h2>2. 投資績效為「負數」的機率比較</h2>
+    <div class="chart-wrapper">
+        <canvas id="lossProbChart"></canvas>
+    </div>
+
+    <h2>3. 00631L(正二) 資產「低於」0050 的相對落後機率</h2>
+    <div class="chart-wrapper">
+        <canvas id="underperformChart"></canvas>
+    </div>
+</div>
+
+<script>
+    let wealthChartInstance = null;
+    let lossProbChartInstance = null;
+    let underperformChartInstance = null;
+
+    // Box-Muller 轉換：產生標準常態分配的隨機變數 (Z)
+    function randomNormal() {
+        let u = 0, v = 0;
+        while(u === 0) u = Math.random(); 
+        while(v === 0) v = Math.random();
+        return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    function runSimulation() {
+        // 取得參數
+        const initialInvestment = parseFloat(document.getElementById('initWealth').value);
+        const mu = parseFloat(document.getElementById('mu').value) / 100;
+        const sigma = parseFloat(document.getElementById('sigma').value) / 100;
+        const years = parseInt(document.getElementById('years').value);
+        const spreadAnnual = parseFloat(document.getElementById('spread').value) / 100;
+        const simulations = 5000;
+
+        // 設定價差權重分佈：7月(index 6)佔 80%，其他11個月平分剩下的 20%
+        const spreadWeights = new Array(12).fill(0.20 / 11);
+        spreadWeights[6] = 0.80; 
+
+        // 存放年度數據
+        let paths0050 = [];
+        let paths00631L = [];
+        
+        // 執行模擬
+        for (let i = 0; i < simulations; i++) {
+            let w50 = initialInvestment;
+            let w2x = initialInvestment;
+            let path50 = [w50];
+            let path2x = [w2x];
+
+            for (let y = 1; y <= years; y++) {
+                // 每個月遞迴計算
+                for (let m = 0; m < 12; m++) {
+                    let z = randomNormal();
+                    
+                    // 1倍指數 (0050) 的月對數報酬 (Ito's Lemma)
+                    let r50_log = (mu - Math.pow(sigma, 2) / 2) / 12 + sigma * Math.sqrt(1/12) * z;
+                    w50 = w50 * Math.exp(r50_log);
+
+                    // 2倍槓桿 (00631L) 的月對數報酬
+                    // 理論漂移項為 (2μ - 2σ²)，波動項為 2σ
+                    // 依照修改邏輯：正值為正價差(耗損)，故加上負號；負值為逆價差(紅利)，負負得正。2倍槓桿需自動乘以2。
+                    let spreadEffect = (-spreadAnnual * 2) * spreadWeights[m];
+                    let r2x_log = (2 * mu - 2 * Math.pow(sigma, 2)) / 12 + 2 * sigma * Math.sqrt(1/12) * z + spreadEffect;
+                    w2x = w2x * Math.exp(r2x_log);
+                }
+                // 紀錄每年年底的資產
+                path50.push(w50);
+                path2x.push(w2x);
+            }
+            paths0050.push(path50);
+            paths00631L.push(path2x);
+        }
+
+        // 統計運算
+        let labels = ['第 0 年'];
+        let median50 = [initialInvestment], median2x = [initialInvestment];
+        let prob50 = [0], prob2x = [0];
+        let probUnderperform = [0];
+
+        for (let y = 1; y <= years; y++) {
+            labels.push(`第 ${y} 年`);
+            let vals50 = [], vals2x = [];
+            let loss50 = 0, loss2x = 0;
+            let underperformCount = 0;
+
+            for (let i = 0; i < simulations; i++) {
+                let v50 = paths0050[i][y];
+                let v2x = paths00631L[i][y];
+                
+                vals50.push(v50);
+                vals2x.push(v2x);
+
+                if (v50 < initialInvestment) loss50++;
+                if (v2x < initialInvestment) loss2x++;
+                if (v2x < v50) underperformCount++;
+            }
+
+            vals50.sort((a, b) => a - b);
+            vals2x.sort((a, b) => a - b);
+
+            median50.push(vals50[Math.floor(simulations * 0.50)]);
+            median2x.push(vals2x[Math.floor(simulations * 0.50)]);
+
+            prob50.push((loss50 / simulations) * 100);
+            prob2x.push((loss2x / simulations) * 100);
+            probUnderperform.push((underperformCount / simulations) * 100);
+        }
+
+        renderCharts(labels, median50, median2x, prob50, prob2x, probUnderperform, years, initialInvestment);
+    }
+
+    function renderCharts(labels, median50, median2x, prob50, prob2x, probUnderperform, years, initWealth) {
+        // 清除舊圖表
+        if (wealthChartInstance) wealthChartInstance.destroy();
+        if (lossProbChartInstance) lossProbChartInstance.destroy();
+        if (underperformChartInstance) underperformChartInstance.destroy();
+
+        // 1. 資產增長圖
+        const ctxWealth = document.getElementById('wealthChart').getContext('2d');
+        wealthChartInstance = new Chart(ctxWealth, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '00631L 正二 (中位數)',
+                        data: median2x,
+                        borderColor: 'rgba(231, 76, 60, 1)',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 3,
+                        tension: 0.2
+                    },
+                    {
+                        label: '0050 (中位數)',
+                        data: median50,
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 3,
+                        pointRadius: 3,
+                        tension: 0.2
+                    },
+                    {
+                        label: '初始本金',
+                        data: Array(years + 1).fill(initWealth),
+                        borderColor: 'rgba(149, 165, 166, 0.6)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        title: { display: true, text: '資產總值 (新台幣)' },
+                        ticks: { callback: function(value) { return value.toLocaleString(); } }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) { return context.dataset.label + ': ' + Math.round(context.raw).toLocaleString() + ' 元'; }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. 虧損機率圖
+        const ctxProb = document.getElementById('lossProbChart').getContext('2d');
+        lossProbChartInstance = new Chart(ctxProb, {
+            type: 'bar',
+            data: {
+                labels: labels.slice(1),
+                datasets: [
+                    {
+                        label: '00631L 正二 虧損機率 (%)',
+                        data: prob2x.slice(1),
+                        backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: '0050 虧損機率 (%)',
+                        data: prob50.slice(1),
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: '虧損機率 (%)' },
+                        ticks: { callback: function(value) { return value + '%'; } }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) { return context.dataset.label + ': ' + context.raw.toFixed(2) + '%'; }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. 績效落後機率圖
+        const ctxUnder = document.getElementById('underperformChart').getContext('2d');
+        underperformChartInstance = new Chart(ctxUnder, {
+            type: 'bar',
+            data: {
+                labels: labels.slice(1),
+                datasets: [
+                    {
+                        label: '00631L 資產低於 0050 之機率 (%)',
+                        data: probUnderperform.slice(1),
+                        backgroundColor: 'rgba(241, 196, 15, 0.7)',
+                        borderColor: 'rgba(243, 156, 18, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100, // 機率最高固定在100%以利觀察變化
+                        title: { display: true, text: '落後機率 (%)' },
+                        ticks: { callback: function(value) { return value + '%'; } }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) { return context.dataset.label + ': ' + context.raw.toFixed(2) + '%'; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 網頁載入時自動執行一次
+    window.onload = runSimulation;
+</script>
+
+</body>
+</html>
