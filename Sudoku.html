@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>邏輯數獨遊戲 (計時挑戰版)</title>
+    <title>邏輯數獨遊戲 (完整計時版)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -114,9 +114,9 @@
             padding-bottom: 10px;
         }
 
-        /* 計時器樣式 */
+        /* 計時器樣式：稍微縮小一點字體以容納 HH:MM:SS */
         .timer-display {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: bold;
             color: #d9534f;
             text-align: center;
@@ -125,7 +125,7 @@
             padding: 10px;
             border-radius: 8px;
             border: 1px solid #fadcdc;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
 
         .diff-options {
@@ -231,7 +231,7 @@
 
         <div class="sidebar">
             <div class="controls-card">
-                <div class="timer-display" id="timerDisplay">00:00</div>
+                <div class="timer-display" id="timerDisplay">00:00:00</div>
 
                 <h3>難度選擇</h3>
                 <div class="diff-options">
@@ -271,7 +271,6 @@
         let isDebugMode = false;
         let gameFinished = false;
 
-        // 計時器變數
         let timerInterval = null;
         let elapsedSeconds = 0;
 
@@ -288,7 +287,7 @@
         
         newGameBtn.addEventListener('click', () => {
             hidePopup();
-            stopTimer(); // 開始生成前先暫停計時器
+            stopTimer(); 
             
             const holesToDig = parseInt(document.querySelector('input[name="difficulty"]:checked').value);
             loadingEl.style.display = 'block';
@@ -304,7 +303,7 @@
             checkAllErrors();
         });
 
-        // --- 計時器邏輯 ---
+        // --- 全新計時器邏輯 (支援 HH:MM:SS) ---
         function startTimer() {
             clearInterval(timerInterval);
             elapsedSeconds = 0;
@@ -323,9 +322,13 @@
         }
 
         function updateTimerDisplay() {
-            let m = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+            // 計算小時、分鐘、秒數
+            let h = Math.floor(elapsedSeconds / 3600).toString().padStart(2, '0');
+            let m = Math.floor((elapsedSeconds % 3600) / 60).toString().padStart(2, '0');
             let s = (elapsedSeconds % 60).toString().padStart(2, '0');
-            timerDisplay.textContent = `${m}:${s}`;
+            
+            // 統一顯示為 HH:MM:SS
+            timerDisplay.textContent = `${h}:${m}:${s}`;
         }
 
         function initPopupNumpad() {
@@ -362,7 +365,7 @@
 
         function setupKeyboard() {
             document.addEventListener('keydown', (e) => {
-                if (gameFinished) return; // 遊戲結束後封鎖輸入
+                if (gameFinished) return; 
 
                 if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
                     e.preventDefault(); 
@@ -407,7 +410,6 @@
             });
         }
 
-        // --- 核心演算法 ---
         function createEmptyBoard() {
             return Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
         }
@@ -489,9 +491,8 @@
             }
         }
 
-        // --- 遊戲邏輯與 UI 互動 ---
         function generateGame(holesToDig = 50) {
-            gameFinished = false; // 重置通關狀態
+            gameFinished = false; 
             solutionBoard = createEmptyBoard();
             fillBoard(solutionBoard);
             puzzleBoard = JSON.parse(JSON.stringify(solutionBoard));
@@ -499,7 +500,7 @@
             digHoles(puzzleBoard, holesToDig);
             renderBoard();
             
-            startTimer(); // 產生盤面後開始計時
+            startTimer(); 
         }
 
         function renderBoard() {
@@ -520,7 +521,7 @@
                     }
                     
                     cell.addEventListener('click', (e) => {
-                        if (gameFinished) return; // 遊戲結束後封鎖點擊選單
+                        if (gameFinished) return; 
                         e.stopPropagation();
                         selectCell(cell, r, c);
                         if (!cell.classList.contains('fixed')) {
@@ -582,7 +583,7 @@
             }
             
             hidePopup();
-            checkWinCondition(); // 每次填入數字後檢查是否通關
+            checkWinCondition(); 
         }
 
         function checkError(el, r, c, num) {
@@ -603,7 +604,6 @@
             });
         }
 
-        // 檢查通關條件
         function checkWinCondition() {
             let cells = document.querySelectorAll('.cell');
             for (let cell of cells) {
@@ -611,17 +611,14 @@
                 let c = parseInt(cell.dataset.col);
                 let val = parseInt(cell.textContent) || 0;
                 
-                // 只要有任何一格是空的，或填錯數字，就代表還沒通關
                 if (val === 0 || val !== solutionBoard[r][c]) {
                     return; 
                 }
             }
 
-            // 如果迴圈跑完沒有 return，代表全部填滿且全對！
             gameFinished = true;
             stopTimer();
             
-            // 延遲一點點跳出視窗，讓玩家能看到最後填入的數字
             setTimeout(() => {
                 const finalTime = timerDisplay.textContent;
                 const difficultyName = document.querySelector('input[name="difficulty"]:checked').parentNode.textContent.trim();
