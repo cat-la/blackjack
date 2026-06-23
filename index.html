@@ -59,6 +59,7 @@ h1 { font-size: 2rem; color: var(--gold); margin-bottom: 8px; display: flex; ali
 .game-column { display: flex; flex-direction: column; align-items: center; width: 100%; }
 .scoreboard { background: var(--panel-bg); border: 1px solid var(--gold-dim); border-radius: 12px; padding: 12px 20px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; width: 100%; max-width: 700px; margin-bottom: 20px; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
 .score-item span { font-weight: 800; color: var(--gold); font-size: 1.1em; }
+.count-secret { transition: opacity 0.3s; }
 .feedback-box { min-height: 60px; width: 100%; max-width: 700px; display: flex; justify-content: center; align-items: center; border-radius: 12px; margin-bottom: 20px; font-weight: bold; font-size: 1.15rem; text-align: center; padding: 10px 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); color: #eee; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.2); line-height: 1.4; }
 
 /* ======== Cards & Table ======== */
@@ -142,6 +143,12 @@ input:checked + .slider { background-color: var(--btn-hit-color); } input:checke
 }
 .flash-accuracy { animation: flashAccuracyText 0.4s ease-in-out 3; display: inline-block; }
 
+@keyframes flashWarningBox {
+    0%, 100% { background: rgba(244,67,54,0.2); box-shadow: 0 0 10px rgba(244,67,54,0.1); transform: scale(1); }
+    50% { background: rgba(244,67,54,0.5); box-shadow: 0 0 20px rgba(244,67,54,0.4); transform: scale(1.01); }
+}
+.flash-warning { animation: flashWarningBox 1.2s ease-in-out infinite !important; border-color: #ef5350 !important; color: white !important; }
+
 /* ======== Modal ======== */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(5px); }
 .modal-overlay.show { display: flex; opacity: 1; }
@@ -163,19 +170,18 @@ input:checked + .slider { background-color: var(--btn-hit-color); } input:checke
 }
 
 @media (max-width: 768px) { 
-    body { padding-bottom: 120px; padding-top: 10px; } /* 底部留白給固定控制列 */
+    body { padding-bottom: 120px; padding-top: 10px; } 
     h1 { font-size: 1.5rem; }
     .scoreboard { padding: 10px; font-size: 0.9rem; gap: 8px; justify-content: space-between; }
     .feedback-box { font-size: 1rem; padding: 10px; min-height: 50px; }
     
-    /* 將操作按鈕固定在螢幕最下方 (拇指操作熱區) */
     .controls-area { 
         position: fixed; 
         bottom: 0; left: 0; 
         width: 100%; max-width: 100%; 
         background: rgba(8, 43, 20, 0.95); 
         backdrop-filter: blur(10px); 
-        padding: 12px 8px calc(12px + env(safe-area-inset-bottom)); /* 支援 iOS 底部安全區 */
+        padding: 12px 8px calc(12px + env(safe-area-inset-bottom)); 
         margin: 0; 
         border-top: 2px solid rgba(243,198,35,0.4); 
         box-shadow: 0 -10px 20px rgba(0,0,0,0.6); 
@@ -213,6 +219,20 @@ input:checked + .slider { background-color: var(--btn-hit-color); } input:checke
 
         <div class="mode-title" style="margin-top:15px;">💰 實戰專區</div>
         <button id="mode-5" class="btn-mode btn-real" onclick="clickChangeMode(5)">實戰模式</button>
+        <button id="mode-6" class="btn-mode btn-real" onclick="clickChangeMode(6)" style="margin-top: 5px;">🧮 算牌實戰模式</button>
+        
+        <div id="counting-settings" style="display: none; flex-direction: column; gap: 8px; margin-top: 10px; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 8px;">
+            <div style="font-size: 0.85rem; color: #81d4fa; text-align: center;">洗牌點 (切牌位置)</div>
+            <select id="penetration-select" onchange="changePenetration()" style="background: var(--felt-dark); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 5px; border-radius: 4px; font-size: 0.85rem; outline: none; cursor: pointer;">
+                <option value="0.3">打 30% (約 125 張)</option>
+                <option value="0.5" selected>打 50% (約 208 張)</option>
+                <option value="0.7">打 70% (約 291 張)</option>
+            </select>
+            <div class="toggle-container" style="justify-content: center; margin-top: 5px;">
+                <label class="switch"><input type="checkbox" id="count-toggle" onchange="updateUI()"><span class="slider"></span></label>
+                <span style="font-size: 0.85rem; color: #81d4fa;">顯示算牌數值</span>
+            </div>
+        </div>
 
         <div class="toggle-container" style="margin-top: 15px; justify-content: center; width: 100%;">
             <label class="switch"><input type="checkbox" id="point-toggle" onchange="updateUI()" checked><span class="slider"></span></label>
@@ -227,6 +247,14 @@ input:checked + .slider { background-color: var(--btn-hit-color); } input:checke
             <div class="score-item">答對: <span id="correct-count">0</span></div>
             <div class="score-item">正確率: <span id="accuracy-wrapper"><span id="accuracy">0%</span></span></div>
         </div>
+        
+        <div id="counting-stats" class="scoreboard" style="display: none; background: rgba(33, 150, 243, 0.1); border-color: rgba(33, 150, 243, 0.4); margin-bottom: 15px;">
+            <div class="score-item">已用: <span id="used-cards" style="color:#81d4fa;">0</span> 張</div>
+            <div class="score-item">剩餘: <span id="remaining-cards" style="color:#81d4fa;">416</span> 張</div>
+            <div class="score-item count-secret">流水數: <span id="running-count" style="color:#fff;">0</span></div>
+            <div class="score-item count-secret">真數: <span id="true-count" style="color:#fff;">0</span></div>
+        </div>
+
         <div id="feedback" class="feedback-box">模式已就緒，請點擊下方按鈕開始發牌！</div>
         
         <div class="table-area">
@@ -350,6 +378,15 @@ let autoNextTimeout = null;
 let currentTrainingMode = 1;
 let audioCtx = null;
 
+// 算牌與鎖定狀態專用變數
+let shoeCards = [];
+let runningCount = 0;
+let usedCardsCount = 0;
+let penetrationLevel = 0.5;
+let isLastHand = false;
+let needsShuffle = true;
+let isActionLocked = false; // 提示音效期間的操作鎖定
+
 function addBet(amount) {
     if (amount === 0) betSize = 0;
     else betSize += amount;
@@ -362,6 +399,10 @@ function toggleChart() {
     const txt = document.getElementById('toggle-text');
     if (isChecked) { panel.classList.remove('hide-table-content'); txt.innerText = "隱藏圖表"; }
     else { panel.classList.add('hide-table-content'); txt.innerText = "顯示圖表"; }
+}
+
+function changePenetration() {
+    penetrationLevel = parseFloat(document.getElementById('penetration-select').value);
 }
 
 const masterDeck = [];
@@ -378,43 +419,52 @@ function createMasterDeck() {
     }
 }
 createMasterDeck();
-// 每次抽牌時，回傳全新的卡片物件，並新增 isDealt（已發出）標記，預設為 false
-function drawCardFromCSM() { 
-    const card = masterDeck[Math.floor(Math.random() * masterDeck.length)];
-    return { d: card.d, s: card.s, r: card.r, w: card.w, isDealt: false }; 
+
+function shuffleShoe() {
+    shoeCards = [];
+    masterDeck.forEach(c => shoeCards.push({...c}));
+    // Fisher-Yates shuffle
+    for (let i = shoeCards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shoeCards[i], shoeCards[j]] = [shoeCards[j], shoeCards[i]];
+    }
+    runningCount = 0;
+    usedCardsCount = 0;
+    isLastHand = false;
+    needsShuffle = false;
 }
 
-/* ======== 優化後的音效引擎 (修復中途無聲問題) ======== */
+function drawCard() { 
+    if (currentTrainingMode !== 6) {
+        const card = masterDeck[Math.floor(Math.random() * masterDeck.length)];
+        return { d: card.d, s: card.s, r: card.r, w: card.w, isDealt: false, counted: false };
+    }
+    // Mode 6 (Card Counting Shoe)
+    if (shoeCards.length === 0) shuffleShoe(); 
+    let card = shoeCards.pop();
+    usedCardsCount++;
+    return { ...card, isDealt: false, counted: false };
+}
+
+/* ======== 音效引擎 ======== */
 function initAudio() {
     try {
         if (!audioCtx) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (AudioContext) audioCtx = new AudioContext();
         }
-        
-        // 【核心修正】檢查音效引擎是否被瀏覽器強制暫停（休眠）
-        // 如果是 suspended 狀態，立刻強制喚醒它
-        if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-    } catch (e) { 
-        console.error("音效初始化失敗", e); 
-    }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) { console.error("音效初始化失敗", e); }
 }
 
-// 發牌專用音效 (輕快的刷聲)
 function playCardDealSound() {
     initAudio(); if(!audioCtx) return;
     try {
         let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.connect(g); g.connect(audioCtx.destination);
+        osc.type = 'sine'; osc.connect(g); g.connect(audioCtx.destination);
         let now = audioCtx.currentTime;
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-        g.gain.setValueAtTime(0, now);
-        g.gain.linearRampToValueAtTime(0.08, now + 0.02);
-        g.gain.linearRampToValueAtTime(0, now + 0.1);
+        osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+        g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.08, now + 0.02); g.gain.linearRampToValueAtTime(0, now + 0.1);
         osc.start(now); osc.stop(now + 0.1);
     } catch(e){}
 }
@@ -424,48 +474,61 @@ function playNote(freq, time, dur, type='sine', vol=0.1) {
     try {
         let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
         osc.connect(g); g.connect(audioCtx.destination);
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, time);
-        g.gain.setValueAtTime(vol, time);
-        g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        osc.type = type; osc.frequency.setValueAtTime(freq, time);
+        g.gain.setValueAtTime(vol, time); g.gain.exponentialRampToValueAtTime(0.001, time + dur);
         osc.start(time); osc.stop(time + dur);
     } catch(e) {}
 }
 
 function playWinSound() { 
-    initAudio(); if(!audioCtx) return;
-    let now = audioCtx.currentTime; 
+    initAudio(); if(!audioCtx) return; let now = audioCtx.currentTime; 
     playNote(523.25, now, 0.2); playNote(659.25, now+0.15, 0.2); playNote(783.99, now+0.3, 0.4); 
 }
 function playLoseSound() { 
-    initAudio(); if(!audioCtx) return;
-    let now = audioCtx.currentTime; 
+    initAudio(); if(!audioCtx) return; let now = audioCtx.currentTime; 
     playNote(329.63, now, 0.2, 'triangle', 0.15); playNote(293.66, now+0.2, 0.2, 'triangle', 0.15); playNote(261.63, now+0.4, 0.4, 'triangle', 0.15); 
 }
 function playBJSound() { 
-    initAudio(); if(!audioCtx) return;
-    let now = audioCtx.currentTime; 
-    const notes = [523.25, 659.25, 783.99, 1046.50]; 
-    notes.forEach((f, i) => playNote(f, now + i*0.1, 0.3)); 
+    initAudio(); if(!audioCtx) return; let now = audioCtx.currentTime; 
+    const notes = [523.25, 659.25, 783.99, 1046.50]; notes.forEach((f, i) => playNote(f, now + i*0.1, 0.3)); 
 }
 function playWrongSound() {
     initAudio(); if(!audioCtx) return;
     try {
-        let now = audioCtx.currentTime;
-        let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
-        osc.connect(g); g.connect(audioCtx.destination);
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(150, now);
-        osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
-        g.gain.setValueAtTime(0.15, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        let now = audioCtx.currentTime; let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.connect(g); g.connect(audioCtx.destination); osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+        g.gain.setValueAtTime(0.15, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
         osc.start(now); osc.stop(now + 0.3);
     } catch(e){}
 }
 function playCorrectSound() {
-    initAudio(); if(!audioCtx) return;
-    let now = audioCtx.currentTime;
+    initAudio(); if(!audioCtx) return; let now = audioCtx.currentTime;
     playNote(659.25, now, 0.15); playNote(880.00, now+0.1, 0.3);
+}
+
+// 柔和的切牌警告音效 (約 2.5 秒)
+function playShuffleWarningSound() {
+    initAudio(); if(!audioCtx) return;
+    try {
+        let now = audioCtx.currentTime;
+        // 播放 3 次柔和的下行鐘聲 (共約 2.5 秒)
+        const frequencies = [523.25, 440.00, 349.23]; // C5, A4, F4
+        for(let i=0; i<3; i++) {
+            let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.type = 'sine'; // 最柔和的正弦波
+            osc.frequency.setValueAtTime(frequencies[i], now + i * 0.8);
+            
+            // 柔和的音量漸入漸出
+            g.gain.setValueAtTime(0, now + i * 0.8);
+            g.gain.linearRampToValueAtTime(0.06, now + i * 0.8 + 0.1); 
+            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.8 + 0.7); 
+            
+            osc.start(now + i * 0.8); 
+            osc.stop(now + i * 0.8 + 0.75);
+        }
+    } catch(e){}
 }
 
 const strategyTable = {
@@ -493,9 +556,24 @@ const strategyTable = {
 };
 
 function clickChangeMode(modeNum) {
+    if (isActionLocked) return; // 鎖定期間不可切換模式
+    
     currentTrainingMode = modeNum;
     document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
     document.getElementById(`mode-${modeNum}`).classList.add('active');
+    
+    const countSettings = document.getElementById('counting-settings');
+    const countStats = document.getElementById('counting-stats');
+    
+    if (modeNum === 6) {
+        countSettings.style.display = 'flex';
+        countStats.style.display = 'flex';
+        needsShuffle = true; // 進入算牌模式強制洗牌
+    } else {
+        countSettings.style.display = 'none';
+        countStats.style.display = 'none';
+    }
+    
     nextRound(); 
 }
 
@@ -523,7 +601,7 @@ function getHandAnalysis(hand) {
 }
 
 function matchTrainingModeFilter(hand) {
-    if (currentTrainingMode === 5) return true; 
+    if (currentTrainingMode === 5 || currentTrainingMode === 6) return true; 
     const analysis = getHandAnalysis(hand);
     if (currentTrainingMode === 1) return checkIsBlackjack(hand) || (analysis.isSoft || analysis.sum < 17);
     if (currentTrainingMode === 2) return (analysis.isPair && analysis.pairCard !== '10');
@@ -534,13 +612,29 @@ function matchTrainingModeFilter(hand) {
 
 function nextRound() {
     initAudio();
-    playCardDealSound(); // 開局發牌音效
+    playCardDealSound(); 
     if (autoNextTimeout) clearTimeout(autoNextTimeout);
 
     isRoundOver = false;
     currentHandIndex = 0;
 
-    if (currentTrainingMode === 5) {
+    const fb = document.getElementById('feedback');
+
+    // 洗牌邏輯 (僅限算牌模式)
+    if (currentTrainingMode === 6 && isLastHand) {
+        needsShuffle = true;
+        isLastHand = false;
+    }
+    if (currentTrainingMode === 6 && needsShuffle) {
+        shuffleShoe();
+        setTimeout(() => {
+            fb.innerText = "🔄 洗牌中... 新的8副牌靴已準備就緒！";
+            fb.style.background = "rgba(33, 150, 243, 0.25)";
+            fb.style.color = "#81d4fa";
+        }, 50);
+    }
+
+    if (currentTrainingMode === 5 || currentTrainingMode === 6) {
         if (bankroll < betSize && betSize > 0) {
             alert("本金不足！系統已為您重新發放 $10000 救援金。");
             bankroll = 10000;
@@ -550,24 +644,46 @@ function nextRound() {
 
     let attempts = 0;
     do {
-        dealerHand = { cards: [drawCardFromCSM(), drawCardFromCSM()] }; 
+        dealerHand = { cards: [drawCard(), drawCard()] }; 
         dealerCard = dealerHand.cards[0];
-        playerHands = [{ cards: [drawCardFromCSM(), drawCardFromCSM()], isDone: false, isSplit: false, bet: betSize, isSurrendered: false }];
+        playerHands = [{ cards: [drawCard(), drawCard()], isDone: false, isSplit: false, bet: betSize, isSurrendered: false }];
         attempts++;
         if (attempts > 1200) break; 
     } while (!matchTrainingModeFilter(playerHands[0]));
 
-    const fb = document.getElementById('feedback');
     document.getElementById('btn-next').style.display = 'none';
     
+    // ======== 切牌位置檢測 (包含警告、鎖定與音效) ========
+    let triggeredLastHandWarning = false;
+    if (currentTrainingMode === 6) {
+        let threshold = 416 * penetrationLevel;
+        if (usedCardsCount >= threshold && !isLastHand) {
+            isLastHand = true;
+            triggeredLastHandWarning = true;
+            
+            // 觸發防呆鎖定
+            isActionLocked = true;
+            playShuffleWarningSound();
+            fb.classList.add('flash-warning');
+            
+            // 2.5 秒後解除鎖定
+            setTimeout(() => {
+                isActionLocked = false;
+                fb.classList.remove('flash-warning');
+                updateUI();
+            }, 2500);
+        }
+    }
+
     let pBJ = checkIsBlackjack(playerHands[0]);
     let dBJ = checkIsBlackjack(dealerHand);
 
     if (pBJ) {
         total++; correct++; isRoundOver = true; playBJSound();
-        if (currentTrainingMode === 5) {
+        if (currentTrainingMode === 5 || currentTrainingMode === 6) {
             if (dBJ) { bankroll += betSize; fb.innerText = "雙方皆為 Blackjack，平手退注！"; } 
             else { bankroll += betSize + (betSize * 1.5); fb.innerText = "★ 天胡 BLACKJACK ★ 贏得 1.5 倍獎金！"; }
+            if (triggeredLastHandWarning) fb.innerText += " (已達切牌卡，此為最後一手牌)";
             document.getElementById('btn-next').style.display = 'block';
             document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>開始下一局';
         } else {
@@ -579,10 +695,11 @@ function nextRound() {
         return;
     }
 
-    if (currentTrainingMode === 5 && dBJ) {
+    if ((currentTrainingMode === 5 || currentTrainingMode === 6) && dBJ) {
         isRoundOver = true; playLoseSound();
         fb.style.background = "rgba(244,67,54,0.2)"; fb.style.color = "#ef9a9a";
         fb.innerText = "莊家 Blackjack！您輸了這局。";
+        if (triggeredLastHandWarning) fb.innerText += " (已達切牌卡，此為最後一手牌)";
         document.getElementById('btn-next').style.display = 'block';
         document.getElementById('btn-next').innerHTML = '<span class="key-hint">空白鍵</span>開始下一局';
         updateUI();
@@ -590,8 +707,13 @@ function nextRound() {
     }
 
     fb.style.background = "rgba(255,255,255,0.05)"; fb.style.color = "#eee";
-    let modeNames = ["", "普通模式", "分牌特訓", "加倍特訓", "軟牌特訓", "實戰模式"];
-    fb.innerText = `🎯 當前：【${modeNames[currentTrainingMode]}】\n請對照策略表做出最佳選擇...`;
+    let modeNames = ["", "普通模式", "分牌特訓", "加倍特訓", "軟牌特訓", "實戰模式", "算牌實戰"];
+    
+    if (triggeredLastHandWarning) {
+        fb.innerText = `⚠️ 提示：已達切牌卡，此為最後一手牌！(打完將洗牌)\n請對照策略表做出最佳選擇...`;
+    } else {
+        fb.innerText = `🎯 當前：【${modeNames[currentTrainingMode]}】\n請對照策略表做出最佳選擇...`;
+    }
     
     updateUI();
 }
@@ -622,7 +744,7 @@ function getCorrectAction(hand, dealerUpCard) {
 }
 
 function playDealerAndSettle() {
-    if (currentTrainingMode !== 5) {
+    if (currentTrainingMode !== 5 && currentTrainingMode !== 6) {
         document.getElementById('feedback').innerText += " (自動進入下一局)";
         autoNextTimeout = setTimeout(nextRound, 1200);
         updateUI(); return;
@@ -636,7 +758,7 @@ function playDealerAndSettle() {
     if (!allBustOrSurrender) {
         let dAnal = getHandAnalysis(dealerHand);
         while (dAnal.sum < 17) {
-            dealerHand.cards.push(drawCardFromCSM());
+            dealerHand.cards.push(drawCard());
             playCardDealSound();
             dAnal = getHandAnalysis(dealerHand);
         }
@@ -683,7 +805,8 @@ function moveToNextHand() {
 }
 
 function handleAction(choice) {
-    if (isRoundOver) return;
+    if (isRoundOver || isActionLocked) return; // 音效期間鎖定按鈕
+    
     initAudio(); 
     const currentHand = playerHands[currentHandIndex];
     let correctAns = getCorrectAction(currentHand, dealerCard);
@@ -721,7 +844,7 @@ function handleAction(choice) {
             }
         });
 
-        if (currentTrainingMode !== 5) {
+        if (currentTrainingMode !== 5 && currentTrainingMode !== 6) {
             fb.style.background = "rgba(244,67,54,0.2)"; fb.style.color = "#ef9a9a";
             fb.innerText = `選擇錯誤！標準策略應為【${map[correctAns]}】，請重新選擇！`;
             document.getElementById('total-count').innerText = total;
@@ -732,7 +855,7 @@ function handleAction(choice) {
         }
     } else {
         correct++;
-        if (currentTrainingMode !== 5) {
+        if (currentTrainingMode !== 5 && currentTrainingMode !== 6) {
             playCorrectSound();
             fb.style.background = "rgba(41, 182, 246, 0.2)"; fb.style.color = "#81d4fa";
             fb.innerText = `答對了！標準策略為【${map[correctAns]}】`;
@@ -743,28 +866,28 @@ function handleAction(choice) {
         currentHand.isDone = true; currentHand.isSurrendered = true; moveToNextHand(); 
     } else if (choice === 'H') {
         playCardDealSound();
-        currentHand.cards.push(drawCardFromCSM());
+        currentHand.cards.push(drawCard());
         const a = getHandAnalysis(currentHand);
         if (a.sum >= 21) { currentHand.isDone = true; moveToNextHand(); }
     } else if (choice === 'S') {
         currentHand.isDone = true; moveToNextHand();
     } else if (choice === 'D') {
         playCardDealSound();
-        if (currentTrainingMode === 5) { bankroll -= currentHand.bet; currentHand.bet *= 2; }
-        currentHand.cards.push(drawCardFromCSM()); 
+        if (currentTrainingMode === 5 || currentTrainingMode === 6) { bankroll -= currentHand.bet; currentHand.bet *= 2; }
+        currentHand.cards.push(drawCard()); 
         currentHand.isDone = true; moveToNextHand();
     } else if (choice === 'P') {
         playCardDealSound();
         if (playerHands.length >= 4) return;
-        if (currentTrainingMode === 5) { bankroll -= currentHand.bet; }
+        if (currentTrainingMode === 5 || currentTrainingMode === 6) { bankroll -= currentHand.bet; }
         
         const c1 = currentHand.cards[0], c2 = currentHand.cards[1];
         const isAces = (c1.d === 'A');
 
-        currentHand.cards = [c1, drawCardFromCSM()];
+        currentHand.cards = [c1, drawCard()];
         currentHand.isSplit = true;
 
-        const newHand = { cards: [c2, drawCardFromCSM()], isDone: false, isSplit: true, bet: currentHand.bet, isSurrendered: false };
+        const newHand = { cards: [c2, drawCard()], isDone: false, isSplit: true, bet: currentHand.bet, isSurrendered: false };
         playerHands.splice(currentHandIndex + 1, 0, newHand);
 
         if (isAces) { currentHand.isDone = true; newHand.isDone = true; moveToNextHand(); }
@@ -773,8 +896,16 @@ function handleAction(choice) {
     updateUI();
 }
 
+// 動態更新算牌資料 (卡片翻開時才算入)
+function processCardForCount(c) {
+    if (!c) return;
+    if (!c.counted && currentTrainingMode === 6) {
+        c.counted = true;
+        if (['2','3','4','5','6'].includes(c.d)) runningCount += 1;
+        else if (['10','J','Q','K','A'].includes(c.d)) runningCount -= 1;
+    }
+}
 
-// 支援傳入 noAnimate 參數，若為舊牌則寫入 'animation: none !important;' 關閉動畫
 function createCardHTML(c, delayIndex = 0, noAnimate = false) {
     if (!c) return '';
     let animStyle = noAnimate ? 'animation: none !important;' : `animation-delay: ${delayIndex * 0.1}s`;
@@ -787,20 +918,22 @@ function updateUI() {
     document.getElementById('accuracy').innerText = total === 0 ? "0%" : Math.round((correct / total) * 100) + "%";
     document.getElementById('bankroll').innerText = bankroll;
 
-    // ======== 莊家手牌渲染 ========
+    // ======== 莊家手牌渲染與算牌 ========
     let dCardsHTML = "";
-    let dealerNewIndex = 0; // 用來計算莊家「新牌」的動畫延遲順序
+    let dealerNewIndex = 0; 
     if (dealerHand) {
-        if (currentTrainingMode === 5) {
+        if (currentTrainingMode === 5 || currentTrainingMode === 6) {
             if (isRoundOver) {
                 dCardsHTML = dealerHand.cards.map(c => {
                     let delay = c.isDealt ? 0 : (dealerNewIndex++);
+                    processCardForCount(c); // 回合結束，所有牌面朝上並算入流水數
                     let html = createCardHTML(c, delay, c.isDealt);
-                    c.isDealt = true; // 標記為已經發過
+                    c.isDealt = true; 
                     return html;
                 }).join('');
             } else {
                 let delay0 = dealerCard.isDealt ? 0 : (dealerNewIndex++);
+                processCardForCount(dealerCard); // 明牌算入流水數
                 let html0 = createCardHTML(dealerCard, delay0, dealerCard.isDealt);
                 dealerCard.isDealt = true;
                 
@@ -808,19 +941,21 @@ function updateUI() {
                 let delay1 = holeCard && holeCard.isDealt ? 0 : (dealerNewIndex++);
                 let animStyle = holeCard && holeCard.isDealt ? 'animation: none !important;' : `animation-delay: ${delay1 * 0.1}s`;
                 let html1 = `<div class="card card-back" style="${animStyle}"></div>`;
+                // 暗牌不呼叫 processCardForCount
                 if(holeCard) holeCard.isDealt = true;
                 
                 dCardsHTML = html0 + html1;
             }
         } else {
             let delay0 = dealerCard.isDealt ? 0 : (dealerNewIndex++);
+            processCardForCount(dealerCard);
             dCardsHTML = createCardHTML(dealerCard, delay0, dealerCard.isDealt);
             dealerCard.isDealt = true;
         }
     }
     document.getElementById('dealer-cards').innerHTML = dCardsHTML;
 
-    // ======== 玩家手牌渲染 ========
+    // ======== 玩家手牌渲染與算牌 ========
     const container = document.getElementById('player-hands-container');
     container.innerHTML = "";
     const showPoints = document.getElementById('point-toggle').checked;
@@ -846,13 +981,14 @@ function updateUI() {
         const box = document.createElement('div');
         box.className = `player-hand-box ${isActive ? 'active' : ''}`;
         
-        let betDisplay = currentTrainingMode === 5 ? `<div style="font-size:0.8rem;color:#a5d6a7;margin-bottom:6px;">下注: $${hand.bet}</div>` : "";
+        let betDisplay = (currentTrainingMode === 5 || currentTrainingMode === 6) ? `<div style="font-size:0.8rem;color:#a5d6a7;margin-bottom:6px;">下注: $${hand.bet}</div>` : "";
 
-        let playerNewIndex = 0; // 用來計算玩家「新牌」的動畫延遲順序
+        let playerNewIndex = 0; 
         let cardsHTML = hand.cards.map(c => {
             let delay = c.isDealt ? 0 : (playerNewIndex++);
+            processCardForCount(c); // 玩家牌面朝上，算入流水數
             let html = createCardHTML(c, delay, c.isDealt);
-            c.isDealt = true; // 標記為已經發過
+            c.isDealt = true; 
             return html;
         }).join('');
 
@@ -865,13 +1001,43 @@ function updateUI() {
         container.appendChild(box);
     });
 
-    // ======== 控制區按鈕狀態更新 ========
-    if (isRoundOver) {
+    // ======== 算牌資訊更新 ========
+    if (currentTrainingMode === 6) {
+        document.getElementById('used-cards').innerText = usedCardsCount;
+        document.getElementById('remaining-cards').innerText = 416 - usedCardsCount;
+        
+        const showCount = document.getElementById('count-toggle').checked;
+        let decksRemaining = Math.max(1, Math.round((416 - usedCardsCount) / 52));
+        let trueCount = Math.round(runningCount / decksRemaining);
+
+        if (showCount) {
+            document.getElementById('running-count').innerText = runningCount > 0 ? "+" + runningCount : runningCount;
+            document.getElementById('true-count').innerText = trueCount > 0 ? "+" + trueCount : trueCount;
+            document.querySelectorAll('.count-secret').forEach(el => el.style.opacity = '1');
+        } else {
+            document.getElementById('running-count').innerText = "隱藏";
+            document.getElementById('true-count').innerText = "隱藏";
+            document.querySelectorAll('.count-secret').forEach(el => el.style.opacity = '0.5');
+        }
+    }
+
+    // ======== 控制區按鈕狀態更新與鎖定 ========
+    if (isActionLocked) {
+        // 如果正在播放 2.5 秒的警告音效，所有按鈕強制失能 (包含 Next 按鈕)
         document.getElementById('btn-hit').disabled = true;
         document.getElementById('btn-stand').disabled = true;
         document.getElementById('btn-double').disabled = true;
         document.getElementById('btn-split').disabled = true;
         document.getElementById('btn-surrender').disabled = true;
+        document.getElementById('btn-next').disabled = true;
+    } else if (isRoundOver) {
+        document.getElementById('btn-hit').disabled = true;
+        document.getElementById('btn-stand').disabled = true;
+        document.getElementById('btn-double').disabled = true;
+        document.getElementById('btn-split').disabled = true;
+        document.getElementById('btn-surrender').disabled = true;
+        
+        document.getElementById('btn-next').disabled = false; // 解除鎖定，允許下一局
         document.getElementById('btn-next').style.display = 'block';
     } else {
         const cur = playerHands[currentHandIndex];
@@ -879,11 +1045,11 @@ function updateUI() {
         document.getElementById('btn-stand').disabled = false;
         
         let canDouble = (cur.cards.length === 2);
-        if (currentTrainingMode === 5 && bankroll < cur.bet) canDouble = false;
+        if ((currentTrainingMode === 5 || currentTrainingMode === 6) && bankroll < cur.bet) canDouble = false;
         document.getElementById('btn-double').disabled = !canDouble;
         
         let canSplit = (getHandAnalysis(cur).isPair && playerHands.length < 4);
-        if (currentTrainingMode === 5 && bankroll < cur.bet) canSplit = false;
+        if ((currentTrainingMode === 5 || currentTrainingMode === 6) && bankroll < cur.bet) canSplit = false;
         document.getElementById('btn-split').disabled = !canSplit;
         
         let canSurrender = (cur.cards.length === 2 && playerHands.length === 1);
@@ -904,9 +1070,11 @@ function closeGuide(event) {
     setTimeout(() => modal.style.display = 'none', 300); 
 }
 
+// 鍵盤操作
 document.addEventListener('keydown', function(e) {
     const modal = document.getElementById('guide-modal');
     if (modal && modal.style.display === 'flex') return;
+    if (isActionLocked) return; // 鎖定期間停用所有鍵盤操作
 
     const key = e.key.toLowerCase();
 
@@ -914,7 +1082,7 @@ document.addEventListener('keydown', function(e) {
         e.preventDefault(); 
         if (isRoundOver) {
             const btnNext = document.getElementById('btn-next');
-            if (btnNext) btnNext.click();
+            if (btnNext && !btnNext.disabled) btnNext.click();
         }
         return; 
     }
