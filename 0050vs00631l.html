@@ -1,3 +1,4 @@
+<!-- STREAMING_CHUNK:Configuring HTML skeleton and basic CSS styles... -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -59,8 +60,9 @@
             border-radius: 4px;
             font-size: 16px;
         }
+        
+        /* STREAMING_CHUNK:Styling buttons and interactive elements... */
         .btn-run {
-            grid-column: 1 / -1;
             padding: 12px;
             background-color: #3498db;
             color: white;
@@ -74,6 +76,31 @@
         .btn-run:hover {
             background-color: #2980b9;
         }
+        .btn-group {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 15px;
+        }
+        .btn-group button {
+            flex: 1;
+        }
+        .btn-warning {
+            background-color: #e67e22;
+        }
+        .btn-warning:hover {
+            background-color: #d35400;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        .btn-run:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
         .chart-wrapper {
             margin-bottom: 50px;
             position: relative;
@@ -87,10 +114,12 @@
             body { padding: 10px; }
             .container { padding: 15px; }
             .control-panel { grid-template-columns: 1fr; gap: 10px; }
+            .btn-group { flex-direction: column; gap: 10px; }
             .chart-wrapper { height: 350px; }
             .input-group input { width: 100%; }
         }
 
+        /* STREAMING_CHUNK:Styling tooltip for info icons... */
         .info-icon {
             display: inline-block;
             margin-left: 6px;
@@ -142,12 +171,13 @@
 </head>
 <body>
 
+<!-- STREAMING_CHUNK:Building main user interface and input panel... -->
 <div class="container">
     <h1>0050 vs 00631L(正二) 長期投資與價差影響模擬</h1>
     <div class="description">
         本模型採<strong>「每日遞迴 (250交易日/年)」</strong>計算，精確模擬 2 倍槓桿的<strong>波動耗損</strong>與<strong>盤中風險</strong>。<br>
         輸入之「預期年化報酬率」將直接視為最終複合成長率(CAGR)之中位數目標。<br>
-        為兼顧運算效能，模擬次數設定為 2000 次；圖表將呈現該年度內發生虧損與落後的<strong>「平均天數比例」</strong>。
+        圖表二、三呈現的是在該年度內，發生虧損與落後的<strong>「平均天數比例」</strong>。
     </div>
 
     <div class="control-panel">
@@ -188,10 +218,16 @@
             </label>
             <input type="number" id="spread" value="1" step="0.1">
         </div>
-        <!-- 將模擬次數調降為 2000 以應付每日計算的龐大迴圈量 -->
-        <button class="btn-run" onclick="runSimulation()">重新執行蒙地卡羅模擬 (2000次)</button>
+        
+        <!-- 新增三個獨立的執行按鈕區塊 -->
+        <div class="btn-group">
+            <button class="btn-run" onclick="startSimulation(2000, this)">執行模擬 (2000次) - 順暢</button>
+            <button class="btn-run btn-warning" onclick="startSimulation(10000, this)">執行模擬 (1萬次) - 精確</button>
+            <button class="btn-run btn-danger" onclick="startSimulation(30000, this)">執行模擬 (3萬次) - 較耗時</button>
+        </div>
     </div>
 
+    <!-- STREAMING_CHUNK:Setting up chart wrappers... -->
     <h2>1. 資產增長比較圖 (中位數 PR50)</h2>
     <div class="chart-wrapper">
         <canvas id="wealthChart"></canvas>
@@ -209,6 +245,7 @@
 </div>
 
 <script>
+    /* STREAMING_CHUNK:Initializing global variables and async handlers... */
     let wealthChartInstance = null;
     let lossProbChartInstance = null;
     let underperformChartInstance = null;
@@ -221,7 +258,31 @@
         return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
     }
 
-    function runSimulation() {
+    // 處理 UI 更新與非同步執行的包裝函式 (防止畫面卡死)
+    function startSimulation(simulations, btnElement) {
+        let originalText = "";
+        let allButtons = document.querySelectorAll('.btn-group button');
+        
+        if (btnElement) {
+            originalText = btnElement.innerText;
+            btnElement.innerText = `計算 ${simulations} 次中...請稍候`;
+        }
+        
+        // 暫時鎖定所有按鈕，避免使用者在卡頓時重複點擊
+        allButtons.forEach(btn => btn.disabled = true);
+
+        // 使用 setTimeout 讓瀏覽器有時間先渲染出「計算中」的文字，再進行高強度運算
+        setTimeout(() => {
+            runSimulation(simulations);
+            
+            // 運算結束，恢復按鈕狀態
+            if (btnElement) btnElement.innerText = originalText;
+            allButtons.forEach(btn => btn.disabled = false);
+        }, 50);
+    }
+
+    /* STREAMING_CHUNK:Executing main monte carlo simulation logic... */
+    function runSimulation(simulations = 2000) {
         // 取得參數
         const initialInvestment = parseFloat(document.getElementById('initWealth').value);
         const mu = parseFloat(document.getElementById('mu').value) / 100;
@@ -229,8 +290,7 @@
         const years = parseInt(document.getElementById('years').value);
         const spreadAnnual = parseFloat(document.getElementById('spread').value) / 100;
         
-        // 【變更點】每日統計，一年250交易日。降低模擬次數維持網頁效能。
-        const simulations = 2000;
+        // 每日統計參數：一年 250 交易日
         const tradingDaysPerYear = 250;
         const dt = 1 / tradingDaysPerYear;
 
@@ -278,7 +338,7 @@
                     let r2x_log = (2 * mu - Math.pow(sigma, 2)) * dt + 2 * sigma * Math.sqrt(dt) * z + dailySpreadEffect;
                     w2x = w2x * Math.exp(r2x_log);
 
-                    // 【每日統計點】紀錄每一天是否處於落後或虧損狀態
+                    // 每日統計點：紀錄每一天是否處於落後或虧損狀態
                     if (w50 < initialInvestment) dLoss50++;
                     if (w2x < initialInvestment) dLoss2x++;
                     if (w2x < w50) dUnder++;
@@ -300,7 +360,8 @@
             statsUnder.push(underProb);
         }
 
-        // 統計運算 (跨 2000 次模擬取平均/中位數)
+        /* STREAMING_CHUNK:Aggregating statistical data for charting... */
+        // 統計運算 (跨模擬次數取平均/中位數)
         let labels = ['第 0 年'];
         let median50 = [initialInvestment], median2x = [initialInvestment];
         let prob50 = [0], prob2x = [0];
@@ -337,6 +398,7 @@
         renderCharts(labels, median50, median2x, prob50, prob2x, probUnderperform, years, initialInvestment);
     }
 
+    /* STREAMING_CHUNK:Rendering CanvasJS charts to screen... */
     function renderCharts(labels, median50, median2x, prob50, prob2x, probUnderperform, years, initWealth) {
         // 清除舊圖表
         if (wealthChartInstance) wealthChartInstance.destroy();
@@ -488,9 +550,17 @@
         });
     }
 
-    // 網頁載入時自動執行一次
-    window.onload = runSimulation;
+    // 網頁載入時自動執行一次 (預設 2000 次)
+    window.onload = () => runSimulation(2000);
 </script>
 
 </body>
 </html>
+```eof
+
+現在這個檔案已經直接包含：
+1. **三個新按鈕**，分別為順暢 (2000次)、精確 (10000次)、較耗時 (30000次)。
+2. **防呆提示功能**，當您點下 3 萬次時，畫面上會顯示「計算 30000 次中...請稍候」，並且在算完前無法再次點擊。
+3. **每日統計與年顯示架構**，底層採用 250 天每日盤中計算風險。
+
+您可以直接透過右側預覽畫面按按鈕測試了！
