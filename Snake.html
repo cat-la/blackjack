@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>貪食蛇遊戲</title>
+    <title>貪食蛇與救護車大作戰</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* 確保在手機上點擊按鈕時不會出現預設的反白效果 */
@@ -18,8 +18,8 @@
             color: #e2e8f0;
         }
         canvas {
-            background-color: #2d3748;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            background-color: #0f172a; /* 改用深邃黑曜石背景提升對比 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
         }
     </style>
 </head>
@@ -27,16 +27,16 @@
 
     <!-- 遊戲資訊與標題 -->
     <div class="w-full max-w-[400px] px-4 mb-2">
-        <h1 class="text-2xl font-bold text-center text-green-400 mb-2">經典貪食蛇</h1>
+        <h1 id="game-title" class="text-2xl font-bold text-center text-green-400 mb-2">🐍 經典貪食蛇 🐍</h1>
         
         <div class="flex justify-between items-end bg-gray-800 p-3 rounded-lg shadow-md border border-gray-700">
             <div>
-                <p class="text-sm text-gray-400">分數 <span id="score" class="text-xl font-bold text-white ml-1">0</span></p>
-                <p class="text-sm text-gray-400 mt-1">等級 <span id="level" class="text-lg font-bold text-yellow-400 ml-1">1</span></p>
+                <p class="text-sm text-gray-400"><span id="score-label">分數</span> <span id="score" class="text-xl font-bold text-white ml-1">0</span></p>
+                <p class="text-sm text-gray-400 mt-1">等級 <span id="level" class="text-lg font-bold text-yellow-400 ml-1">1</span><span id="speed-ms" class="text-xs text-blue-300 ml-2 font-mono">(250毫秒)</span></p>
             </div>
             <div class="text-right">
-                <p class="text-xs text-red-400 font-semibold mb-1">最高等級為 LV.10</p>
-                <p class="text-sm text-gray-400">閒置升級倒數: <span id="timer" class="text-lg font-bold text-blue-400">20s</span></p>
+                <p class="text-sm text-gray-400">當前難度 <span id="difficulty-display" class="text-md font-bold text-green-400 ml-1">簡單</span></p>
+                <p class="text-xs text-red-400 font-semibold mt-1">等級上限：<span id="max-level-display">LV.10</span></p>
             </div>
         </div>
     </div>
@@ -46,30 +46,83 @@
         <!-- 畫布 -->
         <canvas id="gameCanvas" width="400" height="400" class="w-full aspect-square rounded-lg border-2 border-gray-600"></canvas>
         
-        <!-- 狀態疊加層 (開始/結束提示) -->
-        <div id="overlay" class="absolute inset-0 top-0 left-4 right-4 bottom-0 bg-black bg-opacity-70 flex flex-col items-center justify-center rounded-lg">
-            <h2 id="overlay-title" class="text-3xl font-bold text-white mb-4">準備開始</h2>
-            <p id="overlay-desc" class="text-gray-300 text-center mb-6 px-4">使用鍵盤 <span class="font-bold text-yellow-400">空白鍵</span><br>或點擊下方按鈕開始遊戲</p>
-            <button id="btn-start" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg active:scale-95 transition-transform">
-                開始遊戲
+        <!-- 狀態疊加層 (開始/結束/難度選擇/安全機制設定提示) -->
+        <div id="overlay" class="absolute inset-0 top-0 left-4 right-4 bottom-0 bg-black bg-opacity-80 flex flex-col items-center justify-center rounded-lg px-4 text-center">
+            <h2 id="overlay-title" class="text-3xl font-bold text-white mb-2">準備開始</h2>
+            
+            <!-- 提示說明 -->
+            <p id="overlay-desc" class="text-gray-300 text-[11px] mb-3 leading-relaxed">
+                使用鍵盤 <span class="font-bold text-yellow-400">空白鍵 (Space)</span> 開始 / 重新出發<br>
+                遊玩時使用鍵盤 <span class="font-bold text-yellow-400">方向鍵 (↑↓←→)</span> 控制方向<br>
+                <span class="text-[10px] text-gray-400">（手機用戶可直接點擊下方按鈕與虛擬方向鍵）</span>
+            </p>
+
+            <!-- 主題選擇區 -->
+            <div class="w-full max-w-[320px] bg-gray-900 bg-opacity-90 p-2.5 rounded-xl border border-gray-700 mb-2.5">
+                <p class="text-[11px] text-gray-400 text-center mb-1.5 font-semibold">選擇遊戲主題</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="theme-snake" onclick="selectTheme('snake')" class="py-1.5 px-1 text-xs font-bold rounded-lg border border-green-500 bg-green-500 bg-opacity-20 text-green-400 transition-all">
+                        🐍 經典貪食蛇<br><span class="text-[9px] font-normal">亮綠蛇與紅蘋果</span>
+                    </button>
+                    <button id="theme-ambulance" onclick="selectTheme('ambulance')" class="py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-red-500 transition-all">
+                        Ambulance<br><span class="text-[9px] font-normal">救護車與傷患</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 難度選擇區 -->
+            <div class="w-full max-w-[320px] bg-gray-900 bg-opacity-90 p-2.5 rounded-xl border border-gray-700 mb-2.5">
+                <p class="text-[11px] text-gray-400 text-center mb-1.5 font-semibold">選擇遊戲難度</p>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button id="diff-easy" onclick="selectDifficulty('easy')" class="py-1.5 px-1 text-xs font-bold rounded-lg border border-green-500 bg-green-500 bg-opacity-20 text-green-400 transition-all">
+                        簡單<br><span class="text-[9px] font-normal">LV.10 滿級</span>
+                    </button>
+                    <button id="diff-medium" onclick="selectDifficulty('medium')" class="py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-yellow-500 transition-all">
+                        中等<br><span class="text-[9px] font-normal">LV.15 滿級</span>
+                    </button>
+                    <button id="diff-hard" onclick="selectDifficulty('hard')" class="py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-red-500 transition-all">
+                        困難<br><span class="text-[9px] font-normal">LV.20 滿級</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 安全緩衝開關設定區 -->
+            <div class="w-full max-w-[320px] bg-gray-900 bg-opacity-90 p-2.5 rounded-xl border border-gray-700 mb-4">
+                <p class="text-[11px] text-gray-400 text-center mb-1.5 font-semibold">自動防撞安全緩衝機制 (200毫秒 緩衝)</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="buffer-on" onclick="toggleBufferOption(true)" class="py-1.5 px-1 text-xs font-bold rounded-lg border border-blue-500 bg-blue-500 bg-opacity-20 text-blue-400 transition-all">
+                        開啟安全緩衝<br><span class="text-[9px] font-normal">自撞與撞牆時自動發動</span>
+                    </button>
+                    <button id="buffer-off" onclick="toggleBufferOption(false)" class="py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-gray-400 transition-all">
+                        傳統硬核模式<br><span class="text-[9px] font-normal">無緩衝，一觸即死</span>
+                    </button>
+                </div>
+            </div>
+
+            <button id="btn-start" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-10 rounded-full shadow-lg active:scale-95 transition-transform text-md">
+                出發
             </button>
         </div>
     </div>
 
-    <!-- 手機操作介面設定 -->
+    <!-- 手機操作介面設定與音效設定 -->
     <div class="w-full mt-4 px-4 max-w-[400px]">
         <div class="flex justify-between items-center bg-gray-800 rounded-lg p-2 mb-2 text-sm">
-            <span class="text-gray-300 ml-2">單手操作佈局：</span>
-            <div class="flex space-x-1">
-                <button onclick="setPadAlign('start')" id="align-left" class="px-3 py-1 bg-gray-600 rounded text-white active:bg-gray-500">靠左</button>
-                <button onclick="setPadAlign('center')" id="align-center" class="px-3 py-1 bg-blue-600 rounded text-white active:bg-blue-500">置中</button>
-                <button onclick="setPadAlign('end')" id="align-right" class="px-3 py-1 bg-gray-600 rounded text-white active:bg-gray-500">靠右</button>
+            <span class="text-gray-300 ml-2">單手配置：</span>
+            <div class="flex space-x-1 items-center">
+                <button onclick="setPadAlign('start')" id="align-left" class="px-2.5 py-1 bg-gray-600 rounded text-white active:bg-gray-500 text-xs">靠左</button>
+                <button onclick="setPadAlign('center')" id="align-center" class="px-2.5 py-1 bg-blue-600 rounded text-white active:bg-blue-500 text-xs">置中</button>
+                <button onclick="setPadAlign('end')" id="align-right" class="px-2.5 py-1 bg-gray-600 rounded text-white active:bg-gray-500 text-xs">靠右</button>
+                <div class="w-[1px] h-4 bg-gray-600 mx-1"></div>
+                <!-- 音樂開關按鈕 -->
+                <button id="btn-mute" onclick="toggleMute()" class="px-2.5 py-1 bg-green-600 rounded text-white text-xs flex items-center">
+                    <span id="mute-icon" class="mr-1">🔊</span>音效
+                </button>
             </div>
         </div>
     </div>
 
     <!-- 虛擬方向鍵 (D-Pad) -->
-    <!-- 預設置中，寬度佔據 2/3 以方便單手操作 -->
     <div id="dpad-wrapper" class="w-full flex justify-center px-4 transition-all duration-300">
         <div class="w-2/3 max-w-[250px] grid grid-cols-3 gap-2">
             <div></div> <!-- 空白佔位 -->
@@ -91,40 +144,398 @@
         const TILE_COUNT = 20;
         const TILE_SIZE = canvas.width / TILE_COUNT;
         
-        // 速度設定陣列 (LV.1 ~ LV.10 的延遲毫秒數，數字越小越快)
-        // 起始 250ms (不會太慢)，極限 65ms (具挑戰性但不會快到無法反應)
-        const SPEEDS = [250, 225, 200, 175, 150, 130, 110, 95, 80, 65];
-        const MAX_LEVEL = 10;
-        const IDLE_TIME_LIMIT = 20; // 20秒沒吃東西強制升級
+        // 難度配置資料：定義最大等級、起始速度延遲與極限速度延遲 (毫秒數，數值越小越快)
+        const DIFFICULTY_CONFIGS = {
+            easy: { maxLevel: 10, startSpeed: 250, endSpeed: 80, label: "簡單", colorClass: "text-green-400" },
+            medium: { maxLevel: 15, startSpeed: 250, endSpeed: 40, label: "中等", colorClass: "text-yellow-400" },
+            hard: { maxLevel: 20, startSpeed: 250, endSpeed: 20, label: "困難", colorClass: "text-red-400" }
+        };
 
+        // 緩衝救援系統設定 (設定 200毫秒 提供反應時間)
+        const RESCUE_BUFFER_DURATION = 200; 
+        let collisionBufferEnabled = true; // 是否開啟緩衝機制
+        let bufferActive = false;
+        let bufferType = null; // 'wall' (撞牆) 或 'self' (自撞)
+        let bufferTimer = null;
+
+        let currentTheme = 'snake'; // 'snake' 或 'ambulance'
+        let currentDifficulty = 'easy'; // 預設難度
         let snake = [];
         let food = { x: 0, y: 0 };
         let dx = 0;
         let dy = 0;
         
-        // 輸入佇列，用來防止玩家快速連續按鍵導致蛇頭咬到蛇頸的 Bug
         let inputQueue = []; 
 
         let score = 0;
         let level = 1;
-        let foodsEatenThisLevel = 0;
         
         let status = 'ready'; // ready, playing, gameover
         let gameLoopTimer = null;
-        let lastEatTime = 0;
         let uiUpdateTimer = null;
+
+        // --- 音效系統 (Web Audio API) 變數 ---
+        let audioCtx = null;
+        let isMuted = false;
+        
+        // 經典主題：8-bit 冒險風格和弦低音線 (16拍循環)
+        const classicBgmNotes = [
+            110.00, 130.81, 164.81, 220.00, // Am
+            98.00,  123.47, 146.83, 196.00, // G
+            87.31,  110.00, 130.81, 174.61, // F
+            82.41,  103.83, 123.47, 164.81  // E
+        ];
+
+        // 救護車主題：雙音警笛音調 (Wee - Woo 交互循環，960Hz / 770Hz)
+        const ambulanceBgmNotes = [960.00, 770.00];
+        let bgmStep = 0;
 
         // --- DOM 元素參照 ---
         const scoreEl = document.getElementById('score');
         const levelEl = document.getElementById('level');
-        const timerEl = document.getElementById('timer');
+        const difficultyDisplay = document.getElementById('difficulty-display');
+        const maxLevelDisplay = document.getElementById('max-level-display');
         const overlay = document.getElementById('overlay');
         const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
         const btnStart = document.getElementById('btn-start');
+        const muteIcon = document.getElementById('mute-icon');
+        const btnMute = document.getElementById('btn-mute');
+        const gameTitle = document.getElementById('game-title');
+        const scoreLabel = document.getElementById('score-label');
+
+        // --- 初始化與徹底解鎖音訊環境 ---
+        function initAudio() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                const buffer = audioCtx.createBuffer(1, 1, 22050);
+                const dummySource = audioCtx.createBufferSource();
+                dummySource.buffer = buffer;
+                dummySource.connect(audioCtx.destination);
+                dummySource.start(0);
+            } catch (e) {
+                console.warn("無法初始化音訊，可能受限於瀏覽器隱私安全策略:", e);
+            }
+        }
+
+        const unlockAudioContext = () => {
+            initAudio();
+            if (audioCtx && audioCtx.state === 'running') {
+                document.removeEventListener('click', unlockAudioContext);
+                document.removeEventListener('keydown', unlockAudioContext);
+                document.removeEventListener('touchstart', unlockAudioContext);
+            }
+        };
+        document.addEventListener('click', unlockAudioContext);
+        document.addEventListener('keydown', unlockAudioContext);
+        document.addEventListener('touchstart', unlockAudioContext);
+
+        // --- 播放背景音樂的一拍 ---
+        function playBgmNote() {
+            if (isMuted || !audioCtx || status !== 'playing' || bufferActive) return;
+
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const currentDelay = getCurrentDelay();
+                
+                // 動態決定節奏間隔
+                let stepInterval = 1;
+                if (currentTheme === 'ambulance') {
+                    if (currentDelay < 50) {
+                        stepInterval = 4; // 在 20ms 極速下，每 4 步一音
+                    } else if (currentDelay < 100) {
+                        stepInterval = 2;
+                    }
+                } else {
+                    if (currentDelay < 50) {
+                        stepInterval = 4;
+                    } else if (currentDelay < 100) {
+                        stepInterval = 2;
+                    }
+                }
+
+                if (bgmStep % stepInterval !== 0) {
+                    bgmStep++;
+                    return;
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                if (currentTheme === 'ambulance') {
+                    // 救護車使用 Sine 波模擬氣笛
+                    osc.type = 'sine';
+                    const noteIndex = Math.floor(bgmStep / stepInterval) % ambulanceBgmNotes.length;
+                    const targetFrequency = ambulanceBgmNotes[noteIndex];
+                    osc.frequency.setValueAtTime(targetFrequency, audioCtx.currentTime);
+                    
+                    const noteDuration = Math.min(0.2, (currentDelay * stepInterval) / 1000 * 0.8);
+                    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + noteDuration);
+                    
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + noteDuration + 0.02);
+                } else {
+                    // 經典貪食蛇使用暖和的 Triangle 波
+                    osc.type = 'triangle';
+                    const noteIndex = Math.floor(bgmStep / stepInterval) % classicBgmNotes.length;
+                    const frequency = classicBgmNotes[noteIndex];
+                    osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+                    
+                    const noteDuration = Math.min(0.12, (currentDelay * stepInterval) / 1000 * 0.7);
+                    gain.gain.setValueAtTime(0.07, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + noteDuration);
+                    
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + noteDuration + 0.02);
+                }
+                
+                bgmStep++;
+            } catch (e) {
+                console.log("Audio playback prevented:", e);
+            }
+        }
+
+        // --- 播放吃食物的清脆音效 ---
+        function playEatSound() {
+            if (isMuted || !audioCtx) return;
+
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const now = audioCtx.currentTime;
+
+                if (currentTheme === 'ambulance') {
+                    // 醫療急救上升和弦
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                        gain.gain.setValueAtTime(0.08, now + idx * 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.15);
+                        osc.start(now + idx * 0.05);
+                        osc.stop(now + idx * 0.05 + 0.18);
+                    });
+                } else {
+                    // 經典滑音啾啾聲
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.12);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    osc.start();
+                    osc.stop(now + 0.15);
+                }
+            } catch (e) {
+                console.log("Audio playback prevented:", e);
+            }
+        }
+
+        // --- 播放安全緩衝觸發時的警示音 (倒車雷達) ---
+        function playBufferSound() {
+            if (isMuted || !audioCtx) return;
+
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(1000.00, now);
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                
+                osc.start();
+                osc.stop(now + 0.09);
+            } catch (e) {
+                console.log("Audio playback prevented:", e);
+            }
+        }
+
+        // --- 播放失敗音效 ---
+        function playFailSound() {
+            if (isMuted || !audioCtx) return;
+
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220.00, now);
+                osc.frequency.linearRampToValueAtTime(70.00, now + 0.4);
+                
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                
+                osc.start();
+                osc.stop(now + 0.4);
+            } catch (e) {
+                console.log("Audio playback prevented:", e);
+            }
+        }
+
+        // --- 切換靜音狀態 ---
+        function toggleMute() {
+            isMuted = !isMuted;
+            if (isMuted) {
+                muteIcon.innerText = "🔇";
+                btnMute.classList.replace('bg-green-600', 'bg-gray-600');
+            } else {
+                muteIcon.innerText = "🔊";
+                btnMute.classList.replace('bg-gray-600', 'bg-green-600');
+                initAudio();
+            }
+        }
+
+        // --- 選擇遊戲主題 ---
+        function selectTheme(theme) {
+            currentTheme = theme;
+            
+            const btnSnake = document.getElementById('theme-snake');
+            const btnAmbulance = document.getElementById('theme-ambulance');
+            
+            if (theme === 'snake') {
+                // UI 經典綠色化
+                btnSnake.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-green-500 bg-green-500 bg-opacity-20 text-green-400 transition-all";
+                btnAmbulance.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-red-500 transition-all";
+                
+                gameTitle.innerText = "🐍 經典貪食蛇 🐍";
+                gameTitle.className = "text-2xl font-bold text-center text-green-400 mb-2";
+                scoreLabel.innerText = "分數";
+                
+                overlayTitle.innerText = "準備開始";
+                btnStart.className = "bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-10 rounded-full shadow-lg active:scale-95 transition-transform text-md";
+                btnStart.innerText = "出發";
+            } else {
+                // UI 警示紅色化
+                btnSnake.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-green-400 transition-all";
+                btnAmbulance.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-red-500 bg-red-500 bg-opacity-20 text-red-400 transition-all";
+                
+                gameTitle.innerText = "橫衝直撞救護車"; // 避免諧音混淆，使用清晰的主題文字
+                gameTitle.className = "text-2xl font-bold text-center text-red-500 mb-2";
+                scoreLabel.innerText = "已救人數";
+                
+                overlayTitle.innerText = "準備開始任務";
+                btnStart.className = "bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-10 rounded-full shadow-lg active:scale-95 transition-transform text-md";
+                btnStart.innerText = "出動救援";
+            }
+            
+            // 立即重繪預覽畫面
+            initGame();
+        }
+
+        // --- 選擇難度設定與更新介面外觀 ---
+        function selectDifficulty(diff) {
+            currentDifficulty = diff;
+            const config = DIFFICULTY_CONFIGS[diff];
+            
+            // 更新畫面上方的難度資訊
+            difficultyDisplay.innerText = config.label;
+            difficultyDisplay.className = `text-md font-bold ${config.colorClass} ml-1`;
+            maxLevelDisplay.innerText = `LV.${config.maxLevel}`;
+
+            // 重設所有難度按鈕外觀
+            const buttons = {
+                easy: { el: document.getElementById('diff-easy'), activeClass: 'border-green-500 bg-green-500 bg-opacity-20 text-green-400' },
+                medium: { el: document.getElementById('diff-medium'), activeClass: 'border-yellow-500 bg-yellow-500 bg-opacity-20 text-yellow-400' },
+                hard: { el: document.getElementById('diff-hard'), activeClass: 'border-red-500 bg-red-500 bg-opacity-20 text-red-400' }
+            };
+
+            Object.keys(buttons).forEach(key => {
+                const btn = buttons[key].el;
+                const active = buttons[key].activeClass;
+                
+                if (key === diff) {
+                    btn.className = `py-1.5 px-1 text-xs font-bold rounded-lg border transition-all ${active}`;
+                } else {
+                    btn.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-gray-400 transition-all";
+                }
+            });
+
+            // 難度切換時同步更新速度顯示
+            updateUI();
+        }
+
+        // --- 切換安全機制選項 (開啟/關閉) ---
+        function toggleBufferOption(enabled) {
+            collisionBufferEnabled = enabled;
+            
+            const btnOn = document.getElementById('buffer-on');
+            const btnOff = document.getElementById('buffer-off');
+
+            if (enabled) {
+                btnOn.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-blue-500 bg-blue-500 bg-opacity-20 text-blue-400 transition-all";
+                btnOff.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-gray-400 transition-all";
+            } else {
+                btnOn.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-gray-400 transition-all";
+                btnOff.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-red-500 bg-red-500 bg-opacity-20 text-red-400 transition-all";
+            }
+        }
+
+        // --- 根據當前難度與等級計算當前速度延遲 (毫秒數) ---
+        function getCurrentDelay() {
+            const config = DIFFICULTY_CONFIGS[currentDifficulty];
+            const maxLvl = config.maxLevel;
+            const startSpd = config.startSpeed;
+            const endSpd = config.endSpeed;
+
+            // 線性內插計算對應的速度
+            const totalRange = startSpd - endSpd;
+            const stepValue = totalRange / (maxLvl - 1);
+            return Math.round(startSpd - (level - 1) * stepValue);
+        }
+
+        // --- 判定某個網格點對於蛇下一步而言是否安全 ---
+        function isPositionSafe(x, y) {
+            // 1. 邊界碰撞檢查
+            if (x < 0 || x >= TILE_COUNT || y < 0 || y >= TILE_COUNT) return false;
+            
+            // 2. 身體碰撞檢查（排除最後一節尾巴，因為下一幀移動時尾巴會空出來）
+            for (let i = 0; i < snake.length - 1; i++) {
+                if (snake[i].x === x && snake[i].y === y) return false;
+            }
+            return true;
+        }
 
         // --- 初始化與重置遊戲 ---
         function initGame() {
-            // 蛇的初始位置 (置中，長度 3，往上移動)
             snake = [
                 { x: 10, y: 10 },
                 { x: 10, y: 11 },
@@ -136,7 +547,15 @@
             
             score = 0;
             level = 1;
-            foodsEatenThisLevel = 0;
+            bgmStep = 0;
+            
+            // 確保清除所有緩衝計時器與狀態
+            bufferActive = false;
+            bufferType = null;
+            if (bufferTimer) {
+                clearTimeout(bufferTimer);
+                bufferTimer = null;
+            }
             
             updateUI();
             placeFood();
@@ -149,19 +568,33 @@
             while (!validPosition) {
                 food.x = Math.floor(Math.random() * TILE_COUNT);
                 food.y = Math.floor(Math.random() * TILE_COUNT);
-                // 確保食物不會產生在蛇的身體上
                 validPosition = !snake.some(segment => segment.x === food.x && segment.y === food.y);
             }
+        }
+
+        // --- 觸發救援緩衝 ---
+        function triggerBuffer(type) {
+            bufferActive = true;
+            bufferType = type;
+            playBufferSound();
+            draw(); // 立即重新繪製以更新畫面特效
+            
+            // 暫停主循環，等候玩家自救
+            clearTimeout(gameLoopTimer);
+            
+            bufferTimer = setTimeout(() => {
+                // 如果限時內玩家沒給出正確的方向突圍，判定挑戰失敗
+                gameOver();
+            }, RESCUE_BUFFER_DURATION);
         }
 
         // --- 遊戲主要邏輯更新 ---
         function update() {
             if (status !== 'playing') return;
 
-            // 處理玩家輸入 (從佇列中取出下一個有效方向)
+            // 處理玩家方向輸入
             if (inputQueue.length > 0) {
                 const nextDir = inputQueue.shift();
-                // 確保不能直接180度回轉
                 if (nextDir.dx !== -dx || nextDir.dy !== -dy) {
                     dx = nextDir.dx;
                     dy = nextDir.dy;
@@ -171,144 +604,569 @@
             // 計算新蛇頭位置
             const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
-            // 檢查撞牆判定
+            // 1. 檢查撞牆判定
             if (head.x < 0 || head.x >= TILE_COUNT || head.y < 0 || head.y >= TILE_COUNT) {
-                gameOver();
-                return;
+                if (collisionBufferEnabled) {
+                    if (!bufferActive) {
+                        triggerBuffer('wall');
+                        return;
+                    } else {
+                        gameOver();
+                        return;
+                    }
+                } else {
+                    gameOver();
+                    return;
+                }
             }
 
-            // 檢查是否咬到自己
+            // 2. 檢查自撞判定
             if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-                gameOver();
-                return;
+                if (collisionBufferEnabled) {
+                    if (!bufferActive) {
+                        triggerBuffer('self');
+                        return;
+                    } else {
+                        gameOver();
+                        return;
+                    }
+                } else {
+                    gameOver();
+                    return;
+                }
             }
 
-            // 將新蛇頭加入陣列最前方
+            // 將新蛇頭加入
             snake.unshift(head);
 
             // 檢查是否吃到食物
             if (head.x === food.x && head.y === food.y) {
                 score++;
-                foodsEatenThisLevel++;
-                lastEatTime = Date.now(); // 重置閒置計時器
-
-                // 每吃 3 個食物提升一個等級 (上限為 LV.10)
-                if (foodsEatenThisLevel >= 3) {
-                    levelUp();
-                    foodsEatenThisLevel = 0;
-                }
+                
+                // 吃一顆直接升級一等
+                levelUp();
+                playEatSound(); 
                 
                 updateUI();
                 placeFood();
             } else {
-                // 沒吃到食物，移除蛇尾巴，保持長度
                 snake.pop();
             }
         }
 
         // --- 處理等級提升 ---
         function levelUp() {
-            if (level < MAX_LEVEL) {
+            const config = DIFFICULTY_CONFIGS[currentDifficulty];
+            if (level < config.maxLevel) {
                 level++;
                 updateUI();
             }
         }
 
-        // --- 繪製畫面 ---
+        // --- 繪製指向性蛇 (SNAKE) ---
+        function drawClassicSnake() {
+            snake.forEach((segment, index) => {
+                const cx = segment.x * TILE_SIZE + TILE_SIZE / 2;
+                const cy = segment.y * TILE_SIZE + TILE_SIZE / 2;
+                const r = TILE_SIZE / 2;
+
+                ctx.save();
+
+                if (index === 0) {
+                    // ==========================================
+                    // 1. 繪製蛇頭
+                    // ==========================================
+                    const angle = Math.atan2(dy, dx);
+                    ctx.translate(cx, cy);
+                    ctx.rotate(angle);
+
+                    if (bufferActive && bufferType === 'self') {
+                        ctx.fillStyle = '#f97316'; // 自撞警告橙
+                    } else {
+                        ctx.fillStyle = '#22c55e'; // 亮綠色
+                    }
+
+                    ctx.beginPath();
+                    ctx.moveTo(-r * 0.8, -r * 0.8);
+                    ctx.quadraticCurveTo(r * 0.4, -r * 0.9, r * 1.1, -r * 0.3);
+                    ctx.quadraticCurveTo(r * 1.3, 0, r * 1.1, r * 0.3);
+                    ctx.quadraticCurveTo(r * 0.4, r * 0.9, -r * 0.8, r * 0.8);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // 頭部中央花紋
+                    ctx.fillStyle = (bufferActive && bufferType === 'self') ? '#ea580c' : '#16a34a'; 
+                    ctx.beginPath();
+                    ctx.moveTo(-r * 0.4, -r * 0.5);
+                    ctx.lineTo(r * 0.4, 0);
+                    ctx.lineTo(-r * 0.4, r * 0.5);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // 蛇眼 (左、右)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(r * 0.3, -r * 0.42, r * 0.22, 0, Math.PI * 2);
+                    ctx.arc(r * 0.3, r * 0.42, r * 0.22, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(r * 0.4, -r * 0.42, r * 0.11, 0, Math.PI * 2);
+                    ctx.arc(r * 0.4, r * 0.42, r * 0.11, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 紅色吐信
+                    const showTongue = (Math.floor(Date.now() / 250) % 2 === 0);
+                    if (showTongue) {
+                        ctx.strokeStyle = '#ef4444';
+                        ctx.lineWidth = 2.5;
+                        ctx.lineCap = 'round';
+                        ctx.beginPath();
+                        ctx.moveTo(r * 1.1, 0);
+                        ctx.lineTo(r * 1.5, 0);
+                        ctx.moveTo(r * 1.5, 0);
+                        ctx.lineTo(r * 1.7, -r * 0.25);
+                        ctx.moveTo(r * 1.5, 0);
+                        ctx.lineTo(r * 1.7, r * 0.25);
+                        ctx.stroke();
+                    }
+
+                } else {
+                    // ==========================================
+                    // 2. 繪製蛇身與尾巴
+                    // ==========================================
+                    const prev = snake[index - 1];
+                    let angle = Math.atan2(prev.y - segment.y, prev.x - segment.x);
+                    
+                    ctx.translate(cx, cy);
+                    ctx.rotate(angle);
+
+                    const isEven = index % 2 === 0;
+                    ctx.fillStyle = isEven ? '#16a34a' : '#15803d'; 
+
+                    const isTail = (index === snake.length - 1);
+
+                    if (isTail) {
+                        ctx.beginPath();
+                        ctx.moveTo(r * 0.8, -r * 0.6);
+                        ctx.quadraticCurveTo(r * 0.8, 0, r * 0.8, r * 0.6);
+                        ctx.quadraticCurveTo(0, r * 0.3, -r * 1.1, 0);
+                        ctx.quadraticCurveTo(0, -r * 0.3, r * 0.8, -r * 0.6);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        ctx.fillStyle = '#eab308'; 
+                        ctx.beginPath();
+                        ctx.moveTo(-r * 0.5, -r * 0.15);
+                        ctx.quadraticCurveTo(-r * 0.2, 0, -r * 0.5, r * 0.15);
+                        ctx.lineTo(-r * 1.1, 0);
+                        ctx.closePath();
+                        ctx.fill();
+                    } else {
+                        // 箭頭狀蛇鱗（Chevron）
+                        ctx.beginPath();
+                        ctx.moveTo(r * 0.9, 0);
+                        ctx.lineTo(r * 0.3, -r * 0.85);
+                        ctx.lineTo(-r * 0.8, -r * 0.55);
+                        ctx.lineTo(-r * 0.3, 0);
+                        ctx.lineTo(-r * 0.8, r * 0.55);
+                        ctx.lineTo(r * 0.3, r * 0.85);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        // 導向線
+                        ctx.strokeStyle = '#22c55e'; 
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(-r * 0.3, 0);
+                        ctx.lineTo(r * 0.9, 0);
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.restore();
+            });
+        }
+
+        // --- 繪製救護車隊 (AMBULANCE) ---
+        function drawRescueAmbulance() {
+            snake.forEach((segment, index) => {
+                const cx = segment.x * TILE_SIZE + TILE_SIZE / 2;
+                const cy = segment.y * TILE_SIZE + TILE_SIZE / 2;
+                const r = TILE_SIZE / 2;
+
+                ctx.save();
+
+                if (index === 0) {
+                    // ==========================================
+                    // 1. 救護車頭
+                    // ==========================================
+                    const angle = Math.atan2(dy, dx);
+                    ctx.translate(cx, cy);
+                    ctx.rotate(angle);
+
+                    // 車側避震實體輪胎 (前輪與後輪)
+                    ctx.fillStyle = '#0f172a'; // 輪胎黑
+                    ctx.fillRect(-r * 0.6, -r * 1.0, r * 0.4, r * 0.2);
+                    ctx.fillRect(r * 0.3, -r * 1.0, r * 0.4, r * 0.2);
+                    ctx.fillRect(-r * 0.6, r * 0.8, r * 0.4, r * 0.2);
+                    ctx.fillRect(r * 0.3, r * 0.8, r * 0.4, r * 0.2);
+
+                    // 車本體
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 0.9, -r * 0.85, r * 1.9, r * 1.7, [5, 12, 12, 5]);
+                    ctx.fill();
+
+                    // 紅色腰線
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillRect(-r * 0.9, -r * 0.85, r * 1.9, r * 0.2);
+                    ctx.fillRect(-r * 0.9, r * 0.65, r * 1.9, r * 0.2);
+
+                    // 藍色大擋風玻璃
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.beginPath();
+                    ctx.roundRect(r * 0.3, -r * 0.65, r * 0.5, r * 1.3, 3);
+                    ctx.fill();
+
+                    // 大車燈
+                    ctx.fillStyle = '#eab308';
+                    ctx.beginPath();
+                    ctx.arc(r * 0.9, -r * 0.5, r * 0.15, 0, Math.PI * 2);
+                    ctx.arc(r * 0.9, r * 0.5, r * 0.15, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 十字標記
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(-r * 0.2, 0);
+                    ctx.lineTo(r * 0.2, 0);
+                    ctx.moveTo(0, -r * 0.2);
+                    ctx.lineTo(0, r * 0.2);
+                    ctx.stroke();
+
+                    // 警笛燈
+                    const flashRed = (Math.floor(Date.now() / 200) % 2 === 0);
+                    ctx.fillStyle = flashRed ? '#ef4444' : '#7f1d1d';
+                    ctx.beginPath();
+                    ctx.arc(-r * 0.5, -r * 0.35, r * 0.2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = !flashRed ? '#3b82f6' : '#1e3a8a';
+                    ctx.beginPath();
+                    ctx.arc(-r * 0.5, r * 0.35, r * 0.2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 霓虹光暈
+                    ctx.fillStyle = flashRed ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(-r * 0.5, 0, r * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+
+                } else {
+                    // ==========================================
+                    // 2. 聯結車廂
+                    // ==========================================
+                    const prev = snake[index - 1];
+                    let angle = Math.atan2(prev.y - segment.y, prev.x - segment.x);
+                    
+                    ctx.translate(cx, cy);
+                    ctx.rotate(angle);
+
+                    // ==========================================
+                    // 【鉸接風箱連結器】完美消除格線斷開感 
+                    // ==========================================
+                    ctx.fillStyle = '#1e293b'; // 深灰風箱顏色
+                    ctx.fillRect(r * 0.75, -r * 0.65, r * 0.45, r * 1.3);
+                    // 風箱摺線線條
+                    ctx.strokeStyle = '#475569';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(r * 0.85, -r * 0.6); ctx.lineTo(r * 0.85, r * 0.6);
+                    ctx.moveTo(r * 1.0, -r * 0.6); ctx.lineTo(r * 1.0, r * 0.6);
+                    ctx.moveTo(r * 1.15, -r * 0.6); ctx.lineTo(r * 1.15, r * 0.6);
+                    ctx.stroke();
+
+                    // 車廂輪胎
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(-r * 0.5, -r * 0.92, r * 0.4, r * 0.16);
+                    ctx.fillRect(r * 0.2, -r * 0.92, r * 0.4, r * 0.16);
+                    ctx.fillRect(-r * 0.5, r * 0.76, r * 0.4, r * 0.16);
+                    ctx.fillRect(r * 0.2, r * 0.76, r * 0.4, r * 0.16);
+
+                    const isTail = (index === snake.length - 1);
+
+                    if (isTail) {
+                        ctx.fillStyle = '#f8fafc';
+                        ctx.beginPath();
+                        ctx.roundRect(-r * 0.9, -r * 0.8, r * 1.7, r * 1.6, [10, 3, 3, 10]);
+                        ctx.fill();
+
+                        // 紅色腰線
+                        ctx.fillStyle = '#ef4444';
+                        ctx.fillRect(-r * 0.9, -r * 0.8, r * 1.7, r * 0.15);
+                        ctx.fillRect(-r * 0.9, r * 0.65, r * 1.7, r * 0.15);
+
+                        // 後車門窗戶與細部
+                        ctx.strokeStyle = '#64748b';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(-r * 0.9, 0);
+                        ctx.lineTo(r * 0.4, 0);
+                        ctx.strokeRect(-r * 0.4, -r * 0.5, r * 0.6, r * 0.35);
+                        ctx.strokeRect(-r * 0.4, r * 0.15, r * 0.6, r * 0.35);
+                        ctx.stroke();
+
+                        // 煞車燈
+                        ctx.fillStyle = '#f97316';
+                        ctx.fillRect(-r * 0.9, -r * 0.7, r * 0.15, r * 0.2);
+                        ctx.fillRect(-r * 0.9, r * 0.5, r * 0.15, r * 0.2);
+                    } else {
+                        // 一般車廂
+                        ctx.fillStyle = '#ffffff';
+                        ctx.beginPath();
+                        ctx.roundRect(-r * 0.9, -r * 0.8, r * 1.8, r * 1.6, 6);
+                        ctx.fill();
+
+                        // 腰線
+                        ctx.fillStyle = '#ef4444';
+                        ctx.fillRect(-r * 0.9, -r * 0.8, r * 1.8, r * 0.15);
+                        ctx.fillRect(-r * 0.9, r * 0.65, r * 1.8, r * 0.15);
+
+                        // 車頂十字
+                        ctx.strokeStyle = '#ef4444';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(-r * 0.2, 0);
+                        ctx.lineTo(r * 0.2, 0);
+                        ctx.moveTo(0, -r * 0.2);
+                        ctx.lineTo(0, r * 0.2);
+                        ctx.stroke();
+
+                        // 黑色連結核心
+                        ctx.fillStyle = '#0f172a';
+                        ctx.beginPath();
+                        ctx.arc(-r * 0.95, 0, r * 0.2, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // 救護車廂側邊長條窗戶 (提升細緻度)
+                        ctx.fillStyle = '#475569';
+                        ctx.beginPath();
+                        ctx.roundRect(-r * 0.4, -r * 0.5, r * 0.8, r * 0.18, 1);
+                        ctx.roundRect(-r * 0.4, r * 0.32, r * 0.8, r * 0.18, 1);
+                        ctx.fill();
+                    }
+                }
+
+                ctx.restore();
+            });
+        }
+
+        // --- 繪製蘋果 (SNAKE FOOD) ---
+        function drawApple(x, y) {
+            const px = x * TILE_SIZE;
+            const py = y * TILE_SIZE;
+            const cx = px + TILE_SIZE / 2;
+            const cy = py + TILE_SIZE / 2;
+            const r = TILE_SIZE / 2 - 2;
+
+            ctx.fillStyle = '#ef4444'; 
+            ctx.beginPath();
+            ctx.arc(cx - r * 0.25, cy + r * 0.1, r * 0.8, 0, Math.PI * 2);
+            ctx.arc(cx + r * 0.25, cy + r * 0.1, r * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(cx - r * 0.5, cy + r * 0.6);
+            ctx.quadraticCurveTo(cx, cy + r * 1.1, cx + r * 0.5, cy + r * 0.6);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.save();
+            ctx.shadowColor = 'transparent';
+
+            ctx.strokeStyle = '#78350f'; 
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - r * 0.5);
+            ctx.quadraticCurveTo(cx - 3, cy - r * 1.1, cx - r * 0.4, cy - r * 1.1);
+            ctx.stroke();
+
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.ellipse(cx + r * 0.2, cy - r * 0.8, r * 0.3, r * 0.15, -Math.PI / 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+            ctx.beginPath();
+            ctx.arc(cx - r * 0.35, cy - r * 0.3, r * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // --- 繪製躺在地上流血的人 (AMBULANCE FOOD) ---
+        function drawInjuredPerson(x, y) {
+            const px = x * TILE_SIZE;
+            const py = y * TILE_SIZE;
+            const cx = px + TILE_SIZE / 2;
+            const cy = py + TILE_SIZE / 2;
+            const r = TILE_SIZE / 2 - 2;
+
+            // 1. 動態向外擴散的螢光黃色 SOS 救援脈衝波 (高對比，超清晰)
+            const pulse = (Math.sin(Date.now() / 150) + 1) / 2; 
+            ctx.strokeStyle = `rgba(250, 204, 21, ${0.25 + pulse * 0.55})`; // 螢光黃
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r * (1.1 + pulse * 0.5), 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 2. 鮮紅血跡
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.7)';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + r * 0.2, r * 0.9, r * 0.5, Math.PI / 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.save();
+            ctx.shadowColor = 'transparent';
+
+            // 3. 亮橘色求生安全服 (高對比色)
+            ctx.fillStyle = '#f97316'; 
+            ctx.beginPath();
+            ctx.roundRect(cx - r * 0.6, cy - r * 0.2, r * 1.1, r * 0.5, 4);
+            ctx.fill();
+
+            // 4. 亮天藍色長褲
+            ctx.fillStyle = '#38bdf8'; 
+            ctx.beginPath();
+            ctx.roundRect(cx + r * 0.1, cy - r * 0.15, r * 0.7, r * 0.4, 2);
+            ctx.fill();
+
+            // 皮膚色頭部
+            ctx.fillStyle = '#fed7aa';
+            ctx.beginPath();
+            ctx.arc(cx - r * 0.6, cy, r * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 醫療白色紗布十字 🩹
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.moveTo(cx - r * 0.2, cy + r * 0.05);
+            ctx.lineTo(cx, cy + r * 0.05);
+            ctx.moveTo(cx - r * 0.1, cy - r * 0.05);
+            ctx.lineTo(cx - r * 0.1, cy + r * 0.15);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // --- 繪製畫面主入口 ---
         function draw() {
-            // 清空畫布
-            ctx.fillStyle = '#2d3748';
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // 重繪背景 
+            ctx.fillStyle = '#0f172a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 繪製格線 (增加視覺質感)
-            ctx.strokeStyle = '#4a5568';
-            ctx.lineWidth = 0.5;
-            for(let i = 0; i <= TILE_COUNT; i++) {
+            // ==========================================
+            // 【馬路虚線分隔線】大幅調亮並優化虛線樣式，保證清晰可見
+            // ==========================================
+            ctx.strokeStyle = '#334155'; // 大幅調亮為 slate-700，在深邃色背景下高反差且舒適
+            ctx.lineWidth = 1.5;         // 微增粗度，大幅提升辨識度
+            ctx.setLineDash([6, 12]);    // 調整虛線比例（線段 6像素、間距 12像素），外觀更像實體柏油路
+            
+            for(let i = 1; i < TILE_COUNT; i++) {
+                // 垂直虛線
                 ctx.beginPath();
                 ctx.moveTo(i * TILE_SIZE, 0);
                 ctx.lineTo(i * TILE_SIZE, canvas.height);
                 ctx.stroke();
+                
+                // 水平虛線
                 ctx.beginPath();
                 ctx.moveTo(0, i * TILE_SIZE);
                 ctx.lineTo(canvas.width, i * TILE_SIZE);
                 ctx.stroke();
             }
+            ctx.setLineDash([]); // 恢復實線繪製
 
-            // 繪製食物 (蘋果)
-            ctx.fillStyle = '#f56565';
-            ctx.beginPath();
-            ctx.arc(food.x * TILE_SIZE + TILE_SIZE/2, food.y * TILE_SIZE + TILE_SIZE/2, TILE_SIZE/2 - 2, 0, Math.PI * 2);
-            ctx.fill();
+            // 立體陰影
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+            ctx.shadowBlur = 6;
+            ctx.shadowOffsetX = 3;
+            ctx.shadowOffsetY = 3;
 
-            // 繪製蛇
-            snake.forEach((segment, index) => {
-                // 蛇頭顏色較亮，身體較暗
-                ctx.fillStyle = index === 0 ? '#48bb78' : '#38a169';
+            // 根據主題繪製食物
+            if (currentTheme === 'snake') {
+                drawApple(food.x, food.y);
+                drawClassicSnake();
+            } else {
+                drawInjuredPerson(food.x, food.y);
+                drawRescueAmbulance();
+            }
+
+            // 安全緩衝狀態警告
+            if (bufferActive) {
+                ctx.save();
                 
-                // 為了視覺好看，格子留一點縫隙
-                ctx.fillRect(
-                    segment.x * TILE_SIZE + 1, 
-                    segment.y * TILE_SIZE + 1, 
-                    TILE_SIZE - 2, 
-                    TILE_SIZE - 2
-                );
-            });
+                // 決定警告邊框顏色
+                const warningColor = bufferType === 'wall' ? '#ef4444' : '#f97316';
+                ctx.shadowColor = warningColor;
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = warningColor;
+                ctx.lineWidth = 6;
+                ctx.strokeRect(0, 0, canvas.width, canvas.height);
+                ctx.restore();
+
+                // 決定提示文字
+                let bufferText = "";
+                if (currentTheme === 'ambulance') {
+                    bufferText = bufferType === 'wall' ? '🚨 倒車雷達! 撞牆緩衝自救中 🚨' : '🚨 追尾注意! 自撞緩衝自救中 🚨';
+                } else {
+                    bufferText = bufferType === 'wall' ? '⚡ 撞牆安全救援中! ⚡' : '⚡ 自撞安全救援中! ⚡';
+                }
+
+                ctx.fillStyle = warningColor;
+                ctx.font = 'bold 20px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(bufferText, canvas.width / 2, canvas.height / 2);
+            }
         }
 
         // --- 更新介面文字 ---
         function updateUI() {
             scoreEl.innerText = score;
             levelEl.innerText = level;
-        }
-
-        // --- 20秒防拖延計時器邏輯 ---
-        function checkTimer() {
-            if (status !== 'playing') return;
-
-            const now = Date.now();
-            const elapsedSeconds = Math.floor((now - lastEatTime) / 1000);
-            let remaining = IDLE_TIME_LIMIT - elapsedSeconds;
-
-            // 若達到 20 秒且未達最高等級，強制升級
-            if (remaining <= 0) {
-                if (level < MAX_LEVEL) {
-                    levelUp();
-                    foodsEatenThisLevel = 0; // 重置該等級的食物計數
-                }
-                lastEatTime = now; // 重新開始計時
-                remaining = IDLE_TIME_LIMIT;
-            }
-
-            // 如果已經是最高等級，顯示 "MAX"
-            if (level >= MAX_LEVEL) {
-                timerEl.innerText = "MAX";
-                timerEl.className = "text-lg font-bold text-red-500";
-            } else {
-                timerEl.innerText = remaining + "s";
-                // 剩下 5 秒內改變顏色警告
-                timerEl.className = remaining <= 5 
-                    ? "text-lg font-bold text-red-500" 
-                    : "text-lg font-bold text-blue-400";
+            
+            const currentDelay = getCurrentDelay();
+            const speedMsEl = document.getElementById('speed-ms');
+            if (speedMsEl) {
+                speedMsEl.innerText = `(${currentDelay}毫秒)`;
             }
         }
 
-        // --- 遊戲主迴圈 (使用 setTimeout 以支援動態改變速度) ---
+        // --- 遊戲主迴圈 ---
         function gameLoop() {
             if (status === 'playing') {
                 update();
-                draw();
-                
-                // 依照目前等級取得對應的速度延遲
-                const currentDelay = SPEEDS[level - 1];
-                gameLoopTimer = setTimeout(gameLoop, currentDelay);
+                if (!bufferActive) {
+                    draw();
+                    playBgmNote();
+                    
+                    const currentDelay = getCurrentDelay();
+                    gameLoopTimer = setTimeout(gameLoop, currentDelay);
+                }
             }
         }
 
-        // --- 定時更新 UI (主要是倒數計時) ---
+        // --- 定時更新 UI ---
         function uiLoop() {
-            if (status === 'playing') {
-                checkTimer();
-            }
             uiUpdateTimer = requestAnimationFrame(uiLoop);
         }
 
@@ -316,38 +1174,85 @@
         function startGame() {
             if (status === 'playing') return;
             
+            initAudio();
             initGame();
             status = 'playing';
             overlay.classList.add('hidden');
-            lastEatTime = Date.now();
             
-            // 啟動迴圈
             clearTimeout(gameLoopTimer);
             cancelAnimationFrame(uiUpdateTimer);
             gameLoop();
             uiLoop();
         }
 
+        // --- 任務結束 ---
         function gameOver() {
             status = 'gameover';
             clearTimeout(gameLoopTimer);
             cancelAnimationFrame(uiUpdateTimer);
             
-            overlayTitle.innerText = "挑戰失敗";
-            overlayTitle.className = "text-3xl font-bold text-red-500 mb-4";
+            if (bufferTimer) {
+                clearTimeout(bufferTimer);
+                bufferTimer = null;
+            }
+            bufferActive = false;
+            bufferType = null;
+            
+            playFailSound(); 
+            
+            if (currentTheme === 'ambulance') {
+                overlayTitle.innerText = "救援任務結束";
+                overlayTitle.className = "text-3xl font-bold text-red-500 mb-2";
+                overlayDesc.innerHTML = `
+                    使用鍵盤 <span class="font-bold text-yellow-400">空白鍵 (Space)</span> 重新出發<br>
+                    遊玩時使用鍵盤 <span class="font-bold text-yellow-400">方向鍵 (↑↓←→)</span> 駕駛救護車<br>
+                    <span class="text-xs text-gray-400">（或直接點擊下方按鈕）</span>
+                `;
+            } else {
+                overlayTitle.innerText = "挑戰失敗";
+                overlayTitle.className = "text-3xl font-bold text-red-500 mb-2";
+                overlayDesc.innerHTML = `
+                    使用鍵盤 <span class="font-bold text-yellow-400">空白鍵 (Space)</span> 重新開始<br>
+                    遊玩時使用鍵盤 <span class="font-bold text-yellow-400">方向鍵 (↑↓←→)</span> 控制方向<br>
+                    <span class="text-xs text-gray-400">（或直接點擊下方按鈕）</span>
+                `;
+            }
+            
             overlay.classList.remove('hidden');
         }
 
         // --- 處理方向輸入 ---
         function handleInput(newDx, newDy) {
+            initAudio();
+            
             if (status !== 'playing') return;
-            
-            // 取得目前佇列最後一個方向，或是蛇目前的方向
+
+            // 處於「安全救援緩衝中」
+            if (bufferActive) {
+                const targetX = snake[0].x + newDx;
+                const targetY = snake[0].y + newDy;
+
+                if (newDx * dx + newDy * dy === 0 && isPositionSafe(targetX, targetY)) {
+                    clearTimeout(bufferTimer); 
+                    bufferTimer = null;
+                    
+                    dx = newDx;
+                    dy = newDy;
+                    bufferActive = false;
+                    bufferType = null;
+                    
+                    update();
+                    draw();
+                    
+                    const currentDelay = getCurrentDelay();
+                    gameLoopTimer = setTimeout(gameLoop, currentDelay);
+                }
+                return;
+            }
+
+            // 一般模式
             const lastDir = inputQueue.length > 0 ? inputQueue[inputQueue.length - 1] : { dx, dy };
-            
-            // 避免反向移動
             if (lastDir.dx !== -newDx && lastDir.dy !== -newDy) {
-                // 防止過度輸入累積（最多允許緩存兩個轉彎動作）
                 if (inputQueue.length < 2) {
                     inputQueue.push({ dx: newDx, dy: newDy });
                 }
@@ -356,10 +1261,11 @@
 
         // --- 鍵盤事件監聽 ---
         window.addEventListener('keydown', (e) => {
-            // 防止方向鍵和空白鍵捲動網頁
             if(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
                 e.preventDefault();
             }
+
+            initAudio();
 
             if (e.code === 'Space') {
                 if (status === 'ready' || status === 'gameover') {
@@ -392,11 +1298,9 @@
                 'end': document.getElementById('align-right')
             };
 
-            // 重置對齊 class
             wrapper.classList.remove('justify-start', 'justify-center', 'justify-end');
             wrapper.classList.add(`justify-${align}`);
 
-            // 更新按鈕外觀
             Object.keys(btns).forEach(key => {
                 if (key === align) {
                     btns[key].classList.replace('bg-gray-600', 'bg-blue-600');
@@ -406,9 +1310,11 @@
             });
         }
 
-        // 初始化繪製空畫面
-        initGame();
-        status = 'ready'; // 覆寫 initGame 中預設的狀態確保在開始前凍結
+        // 初始化
+        selectTheme('snake'); // 預設經典貪食蛇
+        selectDifficulty('easy'); // 預設簡單難度
+        toggleBufferOption(true); // 預設開啟救援緩衝
+        status = 'ready';
 
     </script>
 </body>
