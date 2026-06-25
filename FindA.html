@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>尋找 Ace (無死角全域點擊版)</title>
+    <title>尋找 Ace (佈局穩定優化版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .perspective-1000 { perspective: 1000px; }
@@ -22,6 +22,20 @@
         /* 讓玩家知道整塊牌桌都是可點擊的 */
         #game-board { cursor: pointer; }
         #game-board:active { filter: brightness(1.1); transition: filter 0.1s; }
+
+        /* 新增：控制按鈕虛化且不影響佈局的樣式 */
+        .btn-status-visible {
+            opacity: 1;
+            filter: blur(0px);
+            pointer-events: auto;
+            transition: all 0.4s ease;
+        }
+        .btn-status-hidden {
+            opacity: 0;
+            filter: blur(12px);
+            pointer-events: none;
+            transition: all 0.4s ease;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-green-800 flex flex-col items-center justify-center p-3 font-sans text-white select-none overflow-hidden">
@@ -31,18 +45,18 @@
         <h1 class="text-3xl md:text-5xl font-bold mb-1 text-yellow-400 drop-shadow-lg tracking-tighter">尋找 Ace</h1>
         <div id="level-display" class="text-lg md:text-xl font-semibold mb-3 text-white/90">當前關卡: 1</div>
         
-        <!-- 模式選擇器 (置於頂層，點擊不會觸發遊戲開始) -->
+        <!-- 模式選擇器 -->
         <div id="mode-selector" class="flex gap-1 bg-black/40 p-1 rounded-full mb-3 shadow-inner z-50">
-            <button id="btn-mode-swap" class="px-5 py-1.5 rounded-full text-sm md:text-base font-bold transition-all bg-yellow-500 text-green-950 shadow-md">
+            <button id="btn-mode-swap" class="px-5 py-1.5 rounded-full text-sm md:text-base font-bold transition-all text-white/70 hover:text-white">
                 🔄 換牌
             </button>
-            <button id="btn-mode-jump" class="px-5 py-1.5 rounded-full text-sm md:text-base font-bold transition-all text-white/70 hover:text-white">
+            <button id="btn-mode-jump" class="px-5 py-1.5 rounded-full text-sm md:text-base font-bold transition-all bg-yellow-500 text-green-950 shadow-md">
                 ⚡ 跳躍
             </button>
         </div>
 
         <div id="message-display" class="min-h-[40px] text-sm md:text-base font-bold bg-black/30 rounded-full px-5 py-1 flex items-center justify-center text-center w-full border border-white/10 shadow-lg">
-            點擊牌桌開始遊戲
+            點擊牌桌開始挑戰
         </div>
     </div>
 
@@ -51,13 +65,14 @@
         <!-- 卡片由 JS 生成 -->
     </div>
 
-    <button id="action-btn" class="mt-4 md:mt-6 px-12 py-3 md:py-4 bg-yellow-500 hover:bg-yellow-400 text-green-950 text-xl font-bold rounded-full shadow-2xl transition active:scale-95">
+    <!-- 修正：使用類名切換透明度，避免畫面跳動 -->
+    <button id="action-btn" class="mt-4 md:mt-6 px-12 py-3 md:py-4 bg-yellow-500 hover:bg-yellow-400 text-green-950 text-xl font-bold rounded-full shadow-2xl btn-status-visible">
         開始遊戲
     </button>
 
     <script>
         const SHUFFLE_DURATION = 5000;
-        let level = 1, gameState = 'idle', currentMode = 'swap';
+        let level = 1, gameState = 'idle', currentMode = 'jump';
         let cardsArray = [], shuffleStartTime = 0, shuffleTimer = null, aceCard = null, positions = [];
         let lastResultCorrect = false, canProceed = false;
 
@@ -102,7 +117,6 @@
             startRound(false);
         }
 
-        // 點擊模式按鈕時阻止冒泡到牌桌
         btnModeSwap.onclick = (e) => { e.stopPropagation(); setMode('swap'); };
         btnModeJump.onclick = (e) => { e.stopPropagation(); setMode('jump'); };
 
@@ -115,18 +129,15 @@
                 positions.push({ x, y });
                 const wrap = document.createElement('div');
                 wrap.className = 'absolute w-[16%] aspect-[5/7] perspective-1000 z-10 gpu-accelerated';
-                // 為每一張牌增加一個自定義屬性方便點擊時識別
                 wrap.dataset.cardId = i;
-
                 const inner = document.createElement('div');
-                inner.className = 'relative w-full h-full flip-transition preserve-3d shadow-md rounded-lg pointer-events-none'; // 讓 inner 不攔截點擊
+                inner.className = 'relative w-full h-full flip-transition preserve-3d shadow-md rounded-lg pointer-events-none';
                 const back = document.createElement('div');
-                back.className = 'absolute w-full h-full backface-hidden rounded-lg border border-white/60 card-pattern flex items-center justify-center';
+                back.className = 'absolute w-full h-full backface-hidden rounded-lg border border-white/60 card-pattern flex items-center justify-center shadow-lg';
                 back.innerHTML = `<div class="absolute inset-1 border border-white/20 rounded flex items-center justify-center text-white/20 text-xl font-serif">♠</div>`;
                 const front = document.createElement('div');
-                front.className = 'absolute w-full h-full backface-hidden rounded-lg bg-white border border-gray-300 rotate-y-180 flex items-center justify-center text-center overflow-hidden';
+                front.className = 'absolute w-full h-full backface-hidden rounded-lg bg-white border border-gray-300 rotate-y-180 flex items-center justify-center text-center overflow-hidden shadow-lg';
                 inner.appendChild(back); inner.appendChild(front); wrap.appendChild(inner); board.appendChild(wrap);
-                
                 cardsArray.push({ id: i, element: wrap, inner: inner, front: front, isAce: false });
             }
             refreshVisualPositions(0);
@@ -162,7 +173,10 @@
         }
 
         function startRound(isNextLevel = false) {
-            initAudio(); gameState = 'showing'; actionBtn.classList.add('hidden');
+            initAudio(); gameState = 'showing'; 
+            // 修正：不使用 hidden，改用類名虛化
+            actionBtn.classList.replace('btn-status-visible', 'btn-status-hidden');
+
             canProceed = false;
             cardsArray.forEach(c => {
                 c.inner.classList.add('flip-transition');
@@ -200,7 +214,8 @@
                 return;
             }
             const progress = elapsed / SHUFFLE_DURATION;
-            const startInt = Math.max(140, 600 - (level-1)*60), endInt = Math.max(16, 150 - (level-1)*20);
+            const startInt = Math.max(16, 600 * Math.pow(0.90, level - 1));
+            const endInt = Math.max(16, 150 * Math.pow(0.85, level - 1));
             const currentInt = startInt - (startInt - endInt) * progress;
             let i1, i2;
             if (currentMode === 'jump') {
@@ -227,51 +242,32 @@
             lastResultCorrect = card.isAce;
             if (lastResultCorrect) {
                 play(correctBuf); 
-                messageDisplay.innerText = "恭喜過關！ (點擊任意處進入下一關)";
+                messageDisplay.innerText = "神級捕捉！恭喜過關！ (點擊任意處進入下一關)";
+                actionBtn.innerText = "下一關";
             } else {
                 play(wrongBuf); 
                 messageDisplay.innerText = "猜錯了！ (點擊任意處重新開始)";
                 setTimeout(() => aceCard.inner.classList.add('flipped'), 600);
+                actionBtn.innerText = "重新開始";
             }
-            setTimeout(() => { canProceed = true; actionBtn.classList.remove('hidden'); }, 500);
+            // 修正：結算後顯示按鈕，改用類名虛化
+            setTimeout(() => { 
+                canProceed = true; 
+                actionBtn.classList.replace('btn-status-hidden', 'btn-status-visible');
+            }, 500);
         }
 
-        // 【重構】全域點擊事件處理器
         board.onclick = (e) => {
-            // 判定是否點擊在某張牌上面
             const clickedCard = e.target.closest('[data-card-id]');
-            
-            if (gameState === 'idle') {
-                // 1. 遊戲未開始
-                startRound(false);
-            } 
-            else if (gameState === 'guessing' && clickedCard) {
-                // 2. 遊戲中且點擊在牌上
-                handleGuess(clickedCard.dataset.cardId);
-            } 
+            if (gameState === 'idle') startRound(false);
+            else if (gameState === 'guessing' && clickedCard) handleGuess(clickedCard.dataset.cardId);
             else if (gameState === 'end' && canProceed) {
-                // 3. 結算後不論點擊哪裡
-                if (lastResultCorrect) {
-                    level++;
-                    levelDisplay.innerText = `當前關卡: ${level}`;
-                    startRound(true);
-                } else {
-                    level = 1;
-                    levelDisplay.innerText = `當前關卡: ${level}`;
-                    startRound(false);
-                }
+                if (lastResultCorrect) { level++; levelDisplay.innerText = `當前關卡: ${level}`; startRound(true); }
+                else { level = 1; levelDisplay.innerText = `當前關卡: ${level}`; startRound(false); }
             }
         };
 
-        // 兼容原有的底部按鈕
-        actionBtn.onclick = (e) => {
-            e.stopPropagation();
-            if (gameState === 'idle' || gameState === 'end') {
-                // 模擬點擊 board
-                board.click();
-            }
-        };
-
+        actionBtn.onclick = (e) => { e.stopPropagation(); board.click(); };
         window.onresize = () => { if(gameState !== 'shuffling') refreshVisualPositions(0); };
         initLayout();
     </script>
