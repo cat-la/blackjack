@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>尋找 Ace (無死角全域點擊版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .perspective-1000 { perspective: 1000px; }
+        .preserve-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .flipped { transform: rotateY(180deg); }
+        .flip-transition { transition: transform 0.5s ease-in-out; }
+        .card-pattern {
+            background: repeating-linear-gradient(45deg, #b91c1c, #b91c1c 10px, #991b1b 10px, #991b1b 20px);
+        }
+        .gpu-accelerated {
+            will-change: transform;
+            transform: translate3d(0,0,0);
+        }
+        /* 讓玩家知道整塊牌桌都是可點擊的 */
+        #game-board { cursor: pointer; }
+        #game-board:active { filter: brightness(1.1); transition: filter 0.1s; }
+    </style>
+</head>
+<body class="min-h-screen bg-green-800 flex flex-col items-center justify-center p-3 font-sans text-white select-none overflow-hidden">
+
+    <!-- 標題與 UI 區 -->
+    <div class="text-center mb-3 w-full max-w-md flex flex-col items-center">
+        <h1 class="text-3xl md:text-5xl font-bold mb-1 text-yellow-400 drop-shadow-lg tracking-tighter">尋找 Ace</h1>
+        <div id="level-display" class="text-lg md:text-xl font-semibold mb-3 text-white/90">當前關卡: 1</div>
+        
+        <!-- 模式選擇器 (置於頂層，點擊不會觸發遊戲開始) -->
+        <div id="mode-selector" class="flex gap-1 bg-black/40 p-1 rounded-full mb-3 shadow-inner z-50">
+            <button id="btn-mode-swap" class="px-5 py-1.5 rounded-full text-sm md:text-base font-bold transition-all bg-yellow-500 text-green-950 shadow-md">
+                🔄 換牌
+            </button>
+            <button id="btn-mode-jump" class="px-5 py-1.5 rounded-full text-sm md:text-base font-bold transition-all text-white/70 hover:text-white">
+                ⚡ 跳躍
+            </button>
+        </div>
+
+        <div id="message-display" class="min-h-[40px] text-sm md:text-base font-bold bg-black/30 rounded-full px-5 py-1 flex items-center justify-center text-center w-full border border-white/10 shadow-lg">
+            點擊牌桌開始遊戲
+        </div>
+    </div>
+
+    <!-- 遊戲牌桌 (全域點擊感應核心) -->
+    <div id="game-board" class="relative w-full max-w-2xl aspect-[4/3] bg-green-900 rounded-2xl shadow-2xl border-4 border-green-950 p-1 overflow-hidden shadow-[inset_0_2px_20px_rgba(0,0,0,0.5)]">
+        <!-- 卡片由 JS 生成 -->
+    </div>
+
+    <button id="action-btn" class="mt-4 md:mt-6 px-12 py-3 md:py-4 bg-yellow-500 hover:bg-yellow-400 text-green-950 text-xl font-bold rounded-full shadow-2xl transition active:scale-95">
+        開始遊戲
+    </button>
+
+    <script>
+        const SHUFFLE_DURATION = 5000;
+        let level = 1, gameState = 'idle', currentMode = 'swap';
+        let cardsArray = [], shuffleStartTime = 0, shuffleTimer = null, aceCard = null, positions = [];
+        let lastResultCorrect = false, canProceed = false;
+
+        const board = document.getElementById('game-board');
+        const levelDisplay = document.getElementById('level-display');
+        const messageDisplay = document.getElementById('message-display');
+        const actionBtn = document.getElementById('action-btn');
+        const btnModeSwap = document.getElementById('btn-mode-swap');
+        const btnModeJump = document.getElementById('btn-mode-jump');
+
+        let audioCtx, shuffleBuf, jumpBuf, correctBuf, wrongBuf;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const createBuf = (dur, fn) => {
+                const b = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+                const d = b.getChannelData(0);
+                for(let i=0; i<d.length; i++) d[i] = fn(i/audioCtx.sampleRate, i, d.length);
+                return b;
+            };
+            shuffleBuf = createBuf(0.08, (t, i, l) => {
+                let lv = 0; lv = lv + 0.08 * ((Math.random()*2-1)-lv);
+                return lv * Math.sin((i/l)*Math.PI) * 0.5;
+            });
+            jumpBuf = createBuf(0.05, t => Math.sin(2 * Math.PI * (400 * Math.exp(-t * 60)) * t) * Math.exp(-t * 60) * 0.7);
+            correctBuf = createBuf(0.8, t => {
+                let s = 0; [261.6, 329.6, 392.0, 523.2].forEach(f => s += Math.sin(2*Math.PI*f*t));
+                return (s/4) * (t < 0.15 ? t/0.15 : Math.pow(Math.max(0, 1-(t-0.15)/0.65), 2)) * 0.4;
+            });
+            wrongBuf = createBuf(0.6, t => (Math.sin(2*Math.PI*(150-(t/0.6)*60)*t) + (Math.random()*2-1)*0.1) * (t < 0.05 ? t/0.05 : Math.pow(Math.max(0, 1-(t-0.05)/0.55), 2)) * 0.3);
+        }
+
+        function play(buf) { if(audioCtx) { const s = audioCtx.createBufferSource(); s.buffer = buf; s.connect(audioCtx.destination); s.start(0); } }
+
+        function setMode(mode) {
+            if (shuffleTimer) clearTimeout(shuffleTimer);
+            currentMode = mode;
+            btnModeSwap.className = mode === 'swap' ? "px-5 py-1.5 rounded-full text-sm md:text-base font-bold transition-all bg-yellow-500 text-green-950 shadow-md" : "px-5 py-1.5 rounded-full text-sm md:text-base font-bold transition-all text-white/70 hover:text-white";
+            btnModeJump.className = mode === 'jump' ? "px-5 py-1.5 rounded-full text-sm md:text-base font-bold transition-all bg-yellow-500 text-green-950 shadow-md" : "px-5 py-1.5 rounded-full text-sm md:text-base font-bold transition-all text-white/70 hover:text-white";
+            level = 1; levelDisplay.innerText = `當前關卡: ${level}`;
+            startRound(false);
+        }
+
+        // 點擊模式按鈕時阻止冒泡到牌桌
+        btnModeSwap.onclick = (e) => { e.stopPropagation(); setMode('swap'); };
+        btnModeJump.onclick = (e) => { e.stopPropagation(); setMode('jump'); };
+
+        function initLayout() {
+            board.innerHTML = ''; cardsArray = []; positions = [];
+            const cw = 16, hGap = 7.2, vGap = 2.6, ch_table = 29.87;
+            for (let i = 0; i < 12; i++) {
+                const col = i % 4, row = Math.floor(i / 4);
+                const x = hGap + col * (cw + hGap), y = vGap + row * (ch_table + vGap);
+                positions.push({ x, y });
+                const wrap = document.createElement('div');
+                wrap.className = 'absolute w-[16%] aspect-[5/7] perspective-1000 z-10 gpu-accelerated';
+                // 為每一張牌增加一個自定義屬性方便點擊時識別
+                wrap.dataset.cardId = i;
+
+                const inner = document.createElement('div');
+                inner.className = 'relative w-full h-full flip-transition preserve-3d shadow-md rounded-lg pointer-events-none'; // 讓 inner 不攔截點擊
+                const back = document.createElement('div');
+                back.className = 'absolute w-full h-full backface-hidden rounded-lg border border-white/60 card-pattern flex items-center justify-center';
+                back.innerHTML = `<div class="absolute inset-1 border border-white/20 rounded flex items-center justify-center text-white/20 text-xl font-serif">♠</div>`;
+                const front = document.createElement('div');
+                front.className = 'absolute w-full h-full backface-hidden rounded-lg bg-white border border-gray-300 rotate-y-180 flex items-center justify-center text-center overflow-hidden';
+                inner.appendChild(back); inner.appendChild(front); wrap.appendChild(inner); board.appendChild(wrap);
+                
+                cardsArray.push({ id: i, element: wrap, inner: inner, front: front, isAce: false });
+            }
+            refreshVisualPositions(0);
+        }
+
+        function refreshVisualPositions(sec) {
+            const bw = board.offsetWidth, bh = board.offsetHeight;
+            cardsArray.forEach((card, logicalIdx) => {
+                const pos = positions[logicalIdx];
+                const px = (pos.x / 100) * bw, py = (pos.y / 100) * bh;
+                const actualSec = currentMode === 'jump' ? 0 : sec;
+                card.element.style.transition = actualSec > 0 ? `transform ${actualSec}s ease-in-out` : 'none';
+                card.element.style.transform = `translate3d(${px}px, ${py}px, 0)`;
+            });
+        }
+
+        function assignCards(keepAceIdentity = false) {
+            let aceIdx;
+            if (keepAceIdentity && aceCard) {
+                aceIdx = cardsArray.findIndex(c => c === aceCard);
+            } else {
+                aceIdx = Math.floor(Math.random() * 12);
+            }
+            cardsArray.forEach((card, i) => {
+                card.isAce = (i === aceIdx);
+                if (card.isAce) {
+                    aceCard = card;
+                    card.front.innerHTML = `<div class="flex flex-col items-center text-black"><span class="text-xl md:text-3xl font-bold leading-none">A</span><span class="text-4xl md:text-6xl">♠</span></div>`;
+                } else {
+                    card.front.innerHTML = `<div class="flex flex-col items-center text-purple-700 font-black"><span class="text-[10px] md:text-lg tracking-widest">JOKER</span><span class="text-2xl md:text-5xl">🃏</span></div>`;
+                }
+            });
+        }
+
+        function startRound(isNextLevel = false) {
+            initAudio(); gameState = 'showing'; actionBtn.classList.add('hidden');
+            canProceed = false;
+            cardsArray.forEach(c => {
+                c.inner.classList.add('flip-transition');
+                c.inner.classList.remove('flipped');
+            });
+            if (!isNextLevel) {
+                cardsArray.sort((a,b) => a.id - b.id);
+                refreshVisualPositions(0.4);
+            }
+            setTimeout(() => {
+                assignCards(isNextLevel); 
+                messageDisplay.innerText = "請盯緊這張「黑桃 A」！";
+                aceCard.inner.classList.add('flipped');
+                setTimeout(() => {
+                    if (currentMode === 'swap') aceCard.inner.classList.remove('flipped');
+                    setTimeout(() => {
+                        gameState = 'shuffling'; shuffleStartTime = Date.now(); doShuffle();
+                    }, 800);
+                }, 2000);
+            }, 500);
+        }
+
+        function doShuffle() {
+            const elapsed = Date.now() - shuffleStartTime;
+            if (elapsed >= SHUFFLE_DURATION) {
+                if (currentMode === 'jump') {
+                    aceCard.inner.classList.remove('flip-transition'); 
+                    aceCard.inner.classList.remove('flipped');         
+                    void aceCard.inner.offsetHeight;
+                    aceCard.inner.classList.add('flip-transition');
+                }
+                setTimeout(() => {
+                    gameState = 'guessing'; messageDisplay.innerText = "黑桃 A 在哪裡？";
+                }, 200);
+                return;
+            }
+            const progress = elapsed / SHUFFLE_DURATION;
+            const startInt = Math.max(140, 600 - (level-1)*60), endInt = Math.max(16, 150 - (level-1)*20);
+            const currentInt = startInt - (startInt - endInt) * progress;
+            let i1, i2;
+            if (currentMode === 'jump') {
+                i1 = cardsArray.findIndex(c => c.isAce); i2 = Math.floor(Math.random() * 12);
+                while (i1 === i2) i2 = Math.floor(Math.random() * 12);
+                play(jumpBuf);
+            } else {
+                i1 = Math.floor(Math.random()*12); i2 = Math.floor(Math.random()*12);
+                if (Math.random() > 0.4) i1 = cardsArray.findIndex(c => c.isAce);
+                while (i1 === i2) i2 = Math.floor(Math.random() * 12);
+                play(shuffleBuf);
+            }
+            const c1 = cardsArray[i1], c2 = cardsArray[i2];
+            cardsArray[i1] = c2; cardsArray[i2] = c1;
+            refreshVisualPositions(currentMode === 'jump' ? 0 : (currentInt * 0.9) / 1000);
+            shuffleTimer = setTimeout(doShuffle, currentInt);
+        }
+
+        function handleGuess(cardId) {
+            if (gameState !== 'guessing') return;
+            gameState = 'end';
+            const card = cardsArray.find(c => c.id == cardId);
+            card.inner.classList.add('flipped');
+            lastResultCorrect = card.isAce;
+            if (lastResultCorrect) {
+                play(correctBuf); 
+                messageDisplay.innerText = "恭喜過關！ (點擊任意處進入下一關)";
+            } else {
+                play(wrongBuf); 
+                messageDisplay.innerText = "猜錯了！ (點擊任意處重新開始)";
+                setTimeout(() => aceCard.inner.classList.add('flipped'), 600);
+            }
+            setTimeout(() => { canProceed = true; actionBtn.classList.remove('hidden'); }, 500);
+        }
+
+        // 【重構】全域點擊事件處理器
+        board.onclick = (e) => {
+            // 判定是否點擊在某張牌上面
+            const clickedCard = e.target.closest('[data-card-id]');
+            
+            if (gameState === 'idle') {
+                // 1. 遊戲未開始
+                startRound(false);
+            } 
+            else if (gameState === 'guessing' && clickedCard) {
+                // 2. 遊戲中且點擊在牌上
+                handleGuess(clickedCard.dataset.cardId);
+            } 
+            else if (gameState === 'end' && canProceed) {
+                // 3. 結算後不論點擊哪裡
+                if (lastResultCorrect) {
+                    level++;
+                    levelDisplay.innerText = `當前關卡: ${level}`;
+                    startRound(true);
+                } else {
+                    level = 1;
+                    levelDisplay.innerText = `當前關卡: ${level}`;
+                    startRound(false);
+                }
+            }
+        };
+
+        // 兼容原有的底部按鈕
+        actionBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (gameState === 'idle' || gameState === 'end') {
+                // 模擬點擊 board
+                board.click();
+            }
+        };
+
+        window.onresize = () => { if(gameState !== 'shuffling') refreshVisualPositions(0); };
+        initLayout();
+    </script>
+</body>
+</html>
