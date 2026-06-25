@@ -47,7 +47,7 @@
         <canvas id="gameCanvas" width="400" height="400" class="w-full aspect-square rounded-lg border-2 border-gray-600"></canvas>
         
         <!-- 狀態疊加層 (開始/結束/難度選擇/安全機制設定提示) -->
-        <div id="overlay" class="absolute inset-0 top-0 left-4 right-4 bottom-0 bg-black bg-opacity-80 flex flex-col items-center justify-center rounded-lg px-4 text-center">
+        <div id="overlay" class="absolute inset-0 top-0 left-4 right-4 bottom-0 bg-black bg-opacity-80 flex flex-col items-center justify-center rounded-lg px-4 text-center z-10">
             <h2 id="overlay-title" class="text-3xl font-bold text-white mb-2">準備開始</h2>
             
             <!-- 提示說明 -->
@@ -61,11 +61,11 @@
             <div class="w-full max-w-[320px] bg-gray-900 bg-opacity-90 p-2.5 rounded-xl border border-gray-700 mb-2.5">
                 <p class="text-[11px] text-gray-400 text-center mb-1.5 font-semibold">選擇遊戲主題</p>
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="theme-snake" onclick="selectTheme('snake')" class="py-1.5 px-1 text-xs font-bold rounded-lg border border-green-500 bg-green-500 bg-opacity-20 text-green-400 transition-all">
-                        🐍 經典貪食蛇<br><span class="text-[9px] font-normal">亮綠蛇與紅蘋果</span>
+                    <button id="theme-snake" onclick="selectTheme('snake')" class="py-2 px-1 text-sm font-bold rounded-lg border border-green-500 bg-green-500 bg-opacity-20 text-green-400 transition-all">
+                        經典貪食蛇
                     </button>
-                    <button id="theme-ambulance" onclick="selectTheme('ambulance')" class="py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-red-500 transition-all">
-                        Ambulance<br><span class="text-[9px] font-normal">救護車與傷患</span>
+                    <button id="theme-ambulance" onclick="selectTheme('ambulance')" class="py-2 px-1 text-sm font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-red-500 transition-all">
+                        救護車
                     </button>
                 </div>
             </div>
@@ -102,6 +102,12 @@
             <button id="btn-start" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-10 rounded-full shadow-lg active:scale-95 transition-transform text-md">
                 出發
             </button>
+        </div>
+
+        <!-- 輕量級失敗確認橫幅 (不遮擋畫布中央，方便玩家完整欣賞慘烈又搞笑的車禍拋射現場) -->
+        <div id="fail-banner" class="hidden absolute bottom-4 left-6 right-6 bg-red-950 bg-opacity-95 hover:bg-red-900 text-white p-3 rounded-xl border-2 border-red-500 text-center shadow-2xl cursor-pointer transition-all hover:scale-105 active:scale-95 animate-pulse z-20">
+            <p id="fail-banner-title" class="font-bold text-xs text-red-400">🚨 發生車禍！救援任務失敗 🚨</p>
+            <p id="fail-banner-desc" class="text-[10px] text-yellow-300 mt-1 font-semibold">傷患全被甩出車外了！點此 或 按 [空白鍵] 查看結算報告</p>
         </div>
     </div>
 
@@ -170,9 +176,13 @@
         let score = 0;
         let level = 1;
         
-        let status = 'ready'; // ready, playing, gameover
+        let status = 'ready'; // ready, playing, crash_view, gameover
         let gameLoopTimer = null;
         let uiUpdateTimer = null;
+
+        // 儲存車禍失敗後，拋射散落到地上的高細緻度趣味傷患與配件資料
+        let deadBodies = [];
+        let scatteredMedicalItems = []; // 飛散的醫療箱、針筒、紅白藥丸等
 
         // --- 音效系統 (Web Audio API) 變數 ---
         let audioCtx = null;
@@ -203,7 +213,11 @@
         const btnMute = document.getElementById('btn-mute');
         const gameTitle = document.getElementById('game-title');
         const scoreLabel = document.getElementById('score-label');
+        const failBanner = document.getElementById('fail-banner');
+        const failBannerTitle = document.getElementById('fail-banner-title');
+        const failBannerDesc = document.getElementById('fail-banner-desc');
 
+        // --- STREAMING_CHUNK: Initializing and unlocking audio context... ---
         // --- 初始化與徹底解鎖音訊環境 ---
         function initAudio() {
             try {
@@ -424,6 +438,7 @@
             }
         }
 
+        // --- STREAMING_CHUNK: Selecting theme elements and swapping layout styles... ---
         // --- 選擇遊戲主題 ---
         function selectTheme(theme) {
             currentTheme = theme;
@@ -432,9 +447,8 @@
             const btnAmbulance = document.getElementById('theme-ambulance');
             
             if (theme === 'snake') {
-                // UI 經典綠色化
-                btnSnake.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-green-500 bg-green-500 bg-opacity-20 text-green-400 transition-all";
-                btnAmbulance.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-red-500 transition-all";
+                btnSnake.className = "py-2 px-1 text-sm font-bold rounded-lg border border-green-500 bg-green-500 bg-opacity-20 text-green-400 transition-all";
+                btnAmbulance.className = "py-2 px-1 text-sm font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-red-500 transition-all";
                 
                 gameTitle.innerText = "🐍 經典貪食蛇 🐍";
                 gameTitle.className = "text-2xl font-bold text-center text-green-400 mb-2";
@@ -444,11 +458,10 @@
                 btnStart.className = "bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-10 rounded-full shadow-lg active:scale-95 transition-transform text-md";
                 btnStart.innerText = "出發";
             } else {
-                // UI 警示紅色化
-                btnSnake.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-green-400 transition-all";
-                btnAmbulance.className = "py-1.5 px-1 text-xs font-bold rounded-lg border border-red-500 bg-red-500 bg-opacity-20 text-red-400 transition-all";
+                btnSnake.className = "py-2 px-1 text-sm font-bold rounded-lg border border-gray-600 text-gray-400 hover:border-green-400 transition-all";
+                btnAmbulance.className = "py-2 px-1 text-sm font-bold rounded-lg border border-red-500 bg-red-500 bg-opacity-20 text-red-400 transition-all";
                 
-                gameTitle.innerText = "橫衝直撞救護車"; // 避免諧音混淆，使用清晰的主題文字
+                gameTitle.innerText = "橫衝直撞救護車"; 
                 gameTitle.className = "text-2xl font-bold text-center text-red-500 mb-2";
                 scoreLabel.innerText = "已救人數";
                 
@@ -457,7 +470,6 @@
                 btnStart.innerText = "出動救援";
             }
             
-            // 立即重繪預覽畫面
             initGame();
         }
 
@@ -466,12 +478,10 @@
             currentDifficulty = diff;
             const config = DIFFICULTY_CONFIGS[diff];
             
-            // 更新畫面上方的難度資訊
             difficultyDisplay.innerText = config.label;
             difficultyDisplay.className = `text-md font-bold ${config.colorClass} ml-1`;
             maxLevelDisplay.innerText = `LV.${config.maxLevel}`;
 
-            // 重設所有難度按鈕外觀
             const buttons = {
                 easy: { el: document.getElementById('diff-easy'), activeClass: 'border-green-500 bg-green-500 bg-opacity-20 text-green-400' },
                 medium: { el: document.getElementById('diff-medium'), activeClass: 'border-yellow-500 bg-yellow-500 bg-opacity-20 text-yellow-400' },
@@ -489,7 +499,6 @@
                 }
             });
 
-            // 難度切換時同步更新速度顯示
             updateUI();
         }
 
@@ -516,7 +525,6 @@
             const startSpd = config.startSpeed;
             const endSpd = config.endSpeed;
 
-            // 線性內插計算對應的速度
             const totalRange = startSpd - endSpd;
             const stepValue = totalRange / (maxLvl - 1);
             return Math.round(startSpd - (level - 1) * stepValue);
@@ -524,10 +532,7 @@
 
         // --- 判定某個網格點對於蛇下一步而言是否安全 ---
         function isPositionSafe(x, y) {
-            // 1. 邊界碰撞檢查
             if (x < 0 || x >= TILE_COUNT || y < 0 || y >= TILE_COUNT) return false;
-            
-            // 2. 身體碰撞檢查（排除最後一節尾巴，因為下一幀移動時尾巴會空出來）
             for (let i = 0; i < snake.length - 1; i++) {
                 if (snake[i].x === x && snake[i].y === y) return false;
             }
@@ -548,14 +553,17 @@
             score = 0;
             level = 1;
             bgmStep = 0;
+            deadBodies = []; 
+            scatteredMedicalItems = [];
             
-            // 確保清除所有緩衝計時器與狀態
             bufferActive = false;
             bufferType = null;
             if (bufferTimer) {
                 clearTimeout(bufferTimer);
                 bufferTimer = null;
             }
+            
+            failBanner.classList.add('hidden');
             
             updateUI();
             placeFood();
@@ -577,22 +585,20 @@
             bufferActive = true;
             bufferType = type;
             playBufferSound();
-            draw(); // 立即重新繪製以更新畫面特效
+            draw(); 
             
-            // 暫停主循環，等候玩家自救
             clearTimeout(gameLoopTimer);
             
             bufferTimer = setTimeout(() => {
-                // 如果限時內玩家沒給出正確的方向突圍，判定挑戰失敗
                 gameOver();
             }, RESCUE_BUFFER_DURATION);
         }
 
+        // --- STREAMING_CHUNK: Updating core snake movement loop... ---
         // --- 遊戲主要邏輯更新 ---
         function update() {
             if (status !== 'playing') return;
 
-            // 處理玩家方向輸入
             if (inputQueue.length > 0) {
                 const nextDir = inputQueue.shift();
                 if (nextDir.dx !== -dx || nextDir.dy !== -dy) {
@@ -601,7 +607,6 @@
                 }
             }
 
-            // 計算新蛇頭位置
             const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
             // 1. 檢查撞牆判定
@@ -636,17 +641,12 @@
                 }
             }
 
-            // 將新蛇頭加入
             snake.unshift(head);
 
-            // 檢查是否吃到食物
             if (head.x === food.x && head.y === food.y) {
                 score++;
-                
-                // 吃一顆直接升級一等
                 levelUp();
                 playEatSound(); 
-                
                 updateUI();
                 placeFood();
             } else {
@@ -654,7 +654,6 @@
             }
         }
 
-        // --- 處理等級提升 ---
         function levelUp() {
             const config = DIFFICULTY_CONFIGS[currentDifficulty];
             if (level < config.maxLevel) {
@@ -663,6 +662,7 @@
             }
         }
 
+        // --- STREAMING_CHUNK: Drawing classic snake skin elements ---
         // --- 繪製指向性蛇 (SNAKE) ---
         function drawClassicSnake() {
             snake.forEach((segment, index) => {
@@ -673,17 +673,14 @@
                 ctx.save();
 
                 if (index === 0) {
-                    // ==========================================
-                    // 1. 繪製蛇頭
-                    // ==========================================
                     const angle = Math.atan2(dy, dx);
                     ctx.translate(cx, cy);
                     ctx.rotate(angle);
 
                     if (bufferActive && bufferType === 'self') {
-                        ctx.fillStyle = '#f97316'; // 自撞警告橙
+                        ctx.fillStyle = '#f97316';
                     } else {
-                        ctx.fillStyle = '#22c55e'; // 亮綠色
+                        ctx.fillStyle = '#22c55e';
                     }
 
                     ctx.beginPath();
@@ -694,7 +691,6 @@
                     ctx.closePath();
                     ctx.fill();
 
-                    // 頭部中央花紋
                     ctx.fillStyle = (bufferActive && bufferType === 'self') ? '#ea580c' : '#16a34a'; 
                     ctx.beginPath();
                     ctx.moveTo(-r * 0.4, -r * 0.5);
@@ -703,7 +699,6 @@
                     ctx.closePath();
                     ctx.fill();
 
-                    // 蛇眼 (左、右)
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
                     ctx.arc(r * 0.3, -r * 0.42, r * 0.22, 0, Math.PI * 2);
@@ -715,7 +710,6 @@
                     ctx.arc(r * 0.4, r * 0.42, r * 0.11, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // 紅色吐信
                     const showTongue = (Math.floor(Date.now() / 250) % 2 === 0);
                     if (showTongue) {
                         ctx.strokeStyle = '#ef4444';
@@ -732,9 +726,6 @@
                     }
 
                 } else {
-                    // ==========================================
-                    // 2. 繪製蛇身與尾巴
-                    // ==========================================
                     const prev = snake[index - 1];
                     let angle = Math.atan2(prev.y - segment.y, prev.x - segment.x);
                     
@@ -763,7 +754,6 @@
                         ctx.closePath();
                         ctx.fill();
                     } else {
-                        // 箭頭狀蛇鱗（Chevron）
                         ctx.beginPath();
                         ctx.moveTo(r * 0.9, 0);
                         ctx.lineTo(r * 0.3, -r * 0.85);
@@ -774,7 +764,6 @@
                         ctx.closePath();
                         ctx.fill();
 
-                        // 導向線
                         ctx.strokeStyle = '#22c55e'; 
                         ctx.lineWidth = 1.5;
                         ctx.beginPath();
@@ -788,6 +777,7 @@
             });
         }
 
+        // --- STREAMING_CHUNK: Drawing rescue ambulance and trailers with detailed wheels ---
         // --- 繪製救護車隊 (AMBULANCE) ---
         function drawRescueAmbulance() {
             snake.forEach((segment, index) => {
@@ -798,45 +788,36 @@
                 ctx.save();
 
                 if (index === 0) {
-                    // ==========================================
-                    // 1. 救護車頭
-                    // ==========================================
                     const angle = Math.atan2(dy, dx);
                     ctx.translate(cx, cy);
                     ctx.rotate(angle);
 
-                    // 車側避震實體輪胎 (前輪與後輪)
-                    ctx.fillStyle = '#0f172a'; // 輪胎黑
+                    ctx.fillStyle = '#0f172a'; 
                     ctx.fillRect(-r * 0.6, -r * 1.0, r * 0.4, r * 0.2);
                     ctx.fillRect(r * 0.3, -r * 1.0, r * 0.4, r * 0.2);
                     ctx.fillRect(-r * 0.6, r * 0.8, r * 0.4, r * 0.2);
                     ctx.fillRect(r * 0.3, r * 0.8, r * 0.4, r * 0.2);
 
-                    // 車本體
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
                     ctx.roundRect(-r * 0.9, -r * 0.85, r * 1.9, r * 1.7, [5, 12, 12, 5]);
                     ctx.fill();
 
-                    // 紅色腰線
                     ctx.fillStyle = '#ef4444';
                     ctx.fillRect(-r * 0.9, -r * 0.85, r * 1.9, r * 0.2);
                     ctx.fillRect(-r * 0.9, r * 0.65, r * 1.9, r * 0.2);
 
-                    // 藍色大擋風玻璃
                     ctx.fillStyle = '#3b82f6';
                     ctx.beginPath();
                     ctx.roundRect(r * 0.3, -r * 0.65, r * 0.5, r * 1.3, 3);
                     ctx.fill();
 
-                    // 大車燈
                     ctx.fillStyle = '#eab308';
                     ctx.beginPath();
                     ctx.arc(r * 0.9, -r * 0.5, r * 0.15, 0, Math.PI * 2);
                     ctx.arc(r * 0.9, r * 0.5, r * 0.15, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // 十字標記
                     ctx.strokeStyle = '#ef4444';
                     ctx.lineWidth = 2.5;
                     ctx.beginPath();
@@ -846,7 +827,6 @@
                     ctx.lineTo(0, r * 0.2);
                     ctx.stroke();
 
-                    // 警笛燈
                     const flashRed = (Math.floor(Date.now() / 200) % 2 === 0);
                     ctx.fillStyle = flashRed ? '#ef4444' : '#7f1d1d';
                     ctx.beginPath();
@@ -857,28 +837,20 @@
                     ctx.arc(-r * 0.5, r * 0.35, r * 0.2, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // 霓虹光暈
                     ctx.fillStyle = flashRed ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)';
                     ctx.beginPath();
                     ctx.arc(-r * 0.5, 0, r * 0.7, 0, Math.PI * 2);
                     ctx.fill();
 
                 } else {
-                    // ==========================================
-                    // 2. 聯結車廂
-                    // ==========================================
                     const prev = snake[index - 1];
                     let angle = Math.atan2(prev.y - segment.y, prev.x - segment.x);
                     
                     ctx.translate(cx, cy);
                     ctx.rotate(angle);
 
-                    // ==========================================
-                    // 【鉸接風箱連結器】完美消除格線斷開感 
-                    // ==========================================
-                    ctx.fillStyle = '#1e293b'; // 深灰風箱顏色
+                    ctx.fillStyle = '#1e293b'; 
                     ctx.fillRect(r * 0.75, -r * 0.65, r * 0.45, r * 1.3);
-                    // 風箱摺線線條
                     ctx.strokeStyle = '#475569';
                     ctx.lineWidth = 1;
                     ctx.beginPath();
@@ -887,7 +859,6 @@
                     ctx.moveTo(r * 1.15, -r * 0.6); ctx.lineTo(r * 1.15, r * 0.6);
                     ctx.stroke();
 
-                    // 車廂輪胎
                     ctx.fillStyle = '#0f172a';
                     ctx.fillRect(-r * 0.5, -r * 0.92, r * 0.4, r * 0.16);
                     ctx.fillRect(r * 0.2, -r * 0.92, r * 0.4, r * 0.16);
@@ -902,12 +873,10 @@
                         ctx.roundRect(-r * 0.9, -r * 0.8, r * 1.7, r * 1.6, [10, 3, 3, 10]);
                         ctx.fill();
 
-                        // 紅色腰線
                         ctx.fillStyle = '#ef4444';
                         ctx.fillRect(-r * 0.9, -r * 0.8, r * 1.7, r * 0.15);
                         ctx.fillRect(-r * 0.9, r * 0.65, r * 1.7, r * 0.15);
 
-                        // 後車門窗戶與細部
                         ctx.strokeStyle = '#64748b';
                         ctx.lineWidth = 1.5;
                         ctx.beginPath();
@@ -917,23 +886,19 @@
                         ctx.strokeRect(-r * 0.4, r * 0.15, r * 0.6, r * 0.35);
                         ctx.stroke();
 
-                        // 煞車燈
                         ctx.fillStyle = '#f97316';
                         ctx.fillRect(-r * 0.9, -r * 0.7, r * 0.15, r * 0.2);
                         ctx.fillRect(-r * 0.9, r * 0.5, r * 0.15, r * 0.2);
                     } else {
-                        // 一般車廂
                         ctx.fillStyle = '#ffffff';
                         ctx.beginPath();
                         ctx.roundRect(-r * 0.9, -r * 0.8, r * 1.8, r * 1.6, 6);
                         ctx.fill();
 
-                        // 腰線
                         ctx.fillStyle = '#ef4444';
                         ctx.fillRect(-r * 0.9, -r * 0.8, r * 1.8, r * 0.15);
                         ctx.fillRect(-r * 0.9, r * 0.65, r * 1.8, r * 0.15);
 
-                        // 車頂十字
                         ctx.strokeStyle = '#ef4444';
                         ctx.lineWidth = 2;
                         ctx.beginPath();
@@ -943,13 +908,11 @@
                         ctx.lineTo(0, r * 0.2);
                         ctx.stroke();
 
-                        // 黑色連結核心
                         ctx.fillStyle = '#0f172a';
                         ctx.beginPath();
                         ctx.arc(-r * 0.95, 0, r * 0.2, 0, Math.PI * 2);
                         ctx.fill();
 
-                        // 救護車廂側邊長條窗戶 (提升細緻度)
                         ctx.fillStyle = '#475569';
                         ctx.beginPath();
                         ctx.roundRect(-r * 0.4, -r * 0.5, r * 0.8, r * 0.18, 1);
@@ -962,7 +925,7 @@
             });
         }
 
-        // --- 繪製蘋果 (SNAKE FOOD) ---
+        // --- 繪製蘋果 ---
         function drawApple(x, y) {
             const px = x * TILE_SIZE;
             const py = y * TILE_SIZE;
@@ -1006,7 +969,8 @@
             ctx.restore();
         }
 
-        // --- 繪製躺在地上流血的人 (AMBULANCE FOOD) ---
+        // --- STREAMING_CHUNK: Adjusting injured person with subtle ground marks... ---
+        // --- 繪製躺在地上等待急救的人 (受傷服裝 + 求救閃爍波) ---
         function drawInjuredPerson(x, y) {
             const px = x * TILE_SIZE;
             const py = y * TILE_SIZE;
@@ -1014,42 +978,37 @@
             const cy = py + TILE_SIZE / 2;
             const r = TILE_SIZE / 2 - 2;
 
-            // 1. 動態向外擴散的螢光黃色 SOS 救援脈衝波 (高對比，超清晰)
             const pulse = (Math.sin(Date.now() / 150) + 1) / 2; 
-            ctx.strokeStyle = `rgba(250, 204, 21, ${0.25 + pulse * 0.55})`; // 螢光黃
+            ctx.strokeStyle = `rgba(250, 204, 21, ${0.25 + pulse * 0.55})`; 
             ctx.lineWidth = 1.8;
             ctx.beginPath();
             ctx.arc(cx, cy, r * (1.1 + pulse * 0.5), 0, Math.PI * 2);
             ctx.stroke();
 
-            // 2. 鮮紅血跡
-            ctx.fillStyle = 'rgba(239, 68, 68, 0.7)';
+            // 2. 輕微擦傷血印 (大幅度縮小尺寸，消除原有飛行傘包覆感)
+            ctx.fillStyle = 'rgba(220, 38, 38, 0.55)';
             ctx.beginPath();
-            ctx.ellipse(cx, cy + r * 0.2, r * 0.9, r * 0.5, Math.PI / 12, 0, Math.PI * 2);
+            ctx.arc(cx + r * 0.15, cy + r * 0.35, r * 0.22, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.save();
             ctx.shadowColor = 'transparent';
 
-            // 3. 亮橘色求生安全服 (高對比色)
             ctx.fillStyle = '#f97316'; 
             ctx.beginPath();
             ctx.roundRect(cx - r * 0.6, cy - r * 0.2, r * 1.1, r * 0.5, 4);
             ctx.fill();
 
-            // 4. 亮天藍色長褲
             ctx.fillStyle = '#38bdf8'; 
             ctx.beginPath();
             ctx.roundRect(cx + r * 0.1, cy - r * 0.15, r * 0.7, r * 0.4, 2);
             ctx.fill();
 
-            // 皮膚色頭部
             ctx.fillStyle = '#fed7aa';
             ctx.beginPath();
             ctx.arc(cx - r * 0.6, cy, r * 0.3, 0, Math.PI * 2);
             ctx.fill();
 
-            // 醫療白色紗布十字 🩹
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1.8;
             ctx.beginPath();
@@ -1062,6 +1021,498 @@
             ctx.restore();
         }
 
+        // --- STREAMING_CHUNK: Drawing scattered medical items... ---
+        // --- 繪製飛散出來的各種醫療配件 (高細緻、幽默寫實) ---
+        function drawScatteredItem(item) {
+            ctx.save();
+            ctx.translate(item.px, item.py);
+            ctx.rotate(item.angle);
+            
+            const r = TILE_SIZE / 2;
+
+            if (item.type === 'box') {
+                // 1. 醫療箱
+                ctx.fillStyle = '#10b981'; // 綠色
+                ctx.beginPath();
+                ctx.roundRect(-r * 0.7, -r * 0.5, r * 1.4, r * 1.0, 3);
+                ctx.fill();
+                // 蓋口
+                ctx.fillStyle = '#047857';
+                ctx.fillRect(-r * 0.7, -r * 0.1, r * 1.4, r * 0.2);
+                // 白十字
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-r * 0.25, -r * 0.25); ctx.lineTo(r * 0.25, -r * 0.25);
+                ctx.moveTo(0, -r * 0.5); ctx.lineTo(0, 0);
+                ctx.stroke();
+            } 
+            else if (item.type === 'pill') {
+                // 2. 紅白藥丸
+                ctx.fillStyle = '#ef4444'; // 紅
+                ctx.beginPath();
+                ctx.roundRect(-r * 0.4, -r * 0.2, r * 0.4, r * 0.4, [4, 0, 0, 4]);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff'; // 白
+                ctx.beginPath();
+                ctx.roundRect(0, -r * 0.2, r * 0.4, r * 0.4, [0, 4, 4, 0]);
+                ctx.fill();
+            } 
+            else if (item.type === 'syringe') {
+                // 3. 巨大針筒
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 2.5;
+                // 針筒主體
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath();
+                ctx.rect(-r * 0.8, -r * 0.25, r * 1.3, r * 0.5);
+                ctx.fill();
+                ctx.stroke();
+                // 活塞
+                ctx.fillStyle = '#3b82f6';
+                ctx.fillRect(-r * 1.1, -r * 0.1, r * 0.3, r * 0.2);
+                // 針頭
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(r * 0.5, 0);
+                ctx.lineTo(r * 1.0, 0);
+                ctx.stroke();
+                // 綠色螢光藥水
+                ctx.fillStyle = '#22c55e';
+                ctx.fillRect(-r * 0.6, -r * 0.18, r * 0.7, r * 0.36);
+            } 
+            else if (item.type === 'drip') {
+                // 4. 生理食鹽水袋與飛散軟管
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 2;
+                ctx.fillStyle = 'rgba(186, 230, 253, 0.4)'; // 亮藍半透明
+                ctx.beginPath();
+                ctx.roundRect(-r * 0.5, -r * 0.7, r * 1.0, r * 1.4, 5);
+                ctx.fill();
+                ctx.stroke();
+                // 液面
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
+                ctx.beginPath();
+                ctx.roundRect(-r * 0.5, -r * 0.1, r * 1.0, r * 0.8, [0, 0, 5, 5]);
+                ctx.fill();
+                // 甩出的彎曲導管
+                ctx.strokeStyle = '#bae6fd';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(0, r * 0.7);
+                ctx.bezierCurveTo(r * 0.5, r * 1.2, -r * 0.8, r * 1.5, r * 0.2, r * 1.9);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // --- STREAMING_CHUNK: Rendering funny broken ragdolls with 5 unique postures... ---
+        // --- 繪製車禍散落、各種搞笑怪姿勢的精細化巨型傷患屍體 (完全突破格子) ---
+        // --- STREAMING_CHUNK: Adjusting ragdoll blood levels to look realistic... ---
+        // --- 繪製車禍散落、各種搞笑怪姿勢的精細化巨型傷患屍體 (完全突破格子) ---
+        function drawDetailedDeadBody(body) {
+            const { px, py, angle, pose, scale, clothesColor, skinColor, hairStyle, socksColor } = body;
+            const r = (TILE_SIZE / 2) * scale; // 根據傷患自適應放大倍率
+
+            ctx.save();
+            ctx.shadowColor = 'transparent';
+
+            // ==========================================
+            // 1. 繪製血跡噴濺 (極簡優雅版，消除原先的大面積圓盤飛行傘感)
+            // ==========================================
+            ctx.fillStyle = 'rgba(185, 28, 28, 0.75)'; // 暗深紅色
+            
+            if (pose === 3) {
+                // 「臉部煞車滑行型」：大幅縮短煞車痕寬度與滑行半徑
+                ctx.beginPath();
+                ctx.ellipse(px - Math.cos(angle)*r*0.7, py - Math.sin(angle)*r*0.7, r * 0.5, r * 0.12, angle, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 微型局部小血漬 (半徑縮至原本的 30% 左右)
+            ctx.beginPath();
+            ctx.arc(px, py + r * 0.2, r * 0.28, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 超微小飛濺血滴點綴
+            ctx.fillStyle = 'rgba(220, 38, 38, 0.85)';
+            ctx.beginPath();
+            ctx.arc(px - r * 0.5, py - r * 0.35, r * 0.06, 0, Math.PI * 2);
+            ctx.arc(px + r * 0.6, py + r * 0.45, r * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+
+            // ==========================================
+            // 2. 進行傷患人體姿態組裝 (旋轉與定位)
+            // ==========================================
+            ctx.translate(px, py);
+            ctx.rotate(angle);
+
+            // 輔助顏色設定
+            const pantsColor = '#38bdf8'; // 天藍色長褲
+            const boneColor = '#f8fafc';  // 白骨折色
+
+            // 繪製身體部件的輔助函數，帶描邊以增強視覺對比度與立體感
+            function drawPart(drawFunc) {
+                ctx.save();
+                drawFunc();
+                ctx.restore();
+            }
+
+            // 繪製五官與頭髮
+            function drawFaceAndHair(faceX, faceY, isBackOfHead) {
+                // 頭部本體
+                ctx.fillStyle = skinColor;
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(faceX, faceY, r * 0.42, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                if (!isBackOfHead) {
+                    // X X 死不瞑目雙眼
+                    ctx.strokeStyle = '#0f172a';
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    // 左 X 眼
+                    ctx.beginPath();
+                    ctx.moveTo(faceX - r * 0.22, faceY - r * 0.12); ctx.lineTo(faceX - r * 0.08, faceY + r * 0.02);
+                    ctx.moveTo(faceX - r * 0.08, faceY - r * 0.12); ctx.lineTo(faceX - r * 0.22, faceY + r * 0.02);
+                    ctx.stroke();
+                    // 右 X 眼
+                    ctx.beginPath();
+                    ctx.moveTo(faceX + r * 0.08, faceY - r * 0.12); ctx.lineTo(faceX + r * 0.22, faceY + r * 0.02);
+                    ctx.moveTo(faceX + r * 0.22, faceY - r * 0.12); ctx.lineTo(faceX + r * 0.08, faceY + r * 0.02);
+                    ctx.stroke();
+
+                    // 暈倒斜線腮紅
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(faceX - r * 0.2, faceY + r * 0.1); ctx.lineTo(faceX - r * 0.1, faceY + r * 0.2);
+                    ctx.moveTo(faceX + r * 0.1, faceY + r * 0.1); ctx.lineTo(faceX + r * 0.2, faceY + r * 0.2);
+                    ctx.stroke();
+
+                    // 逗趣吐小舌頭 👅
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.beginPath();
+                    ctx.ellipse(faceX, faceY + r * 0.2, r * 0.1, r * 0.15, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                // 畫搞笑髮型 (鳥巢狀或禿頭旁分)
+                ctx.fillStyle = '#451a03'; // 深褐色頭髮
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 2;
+                if (hairStyle === 0) {
+                    // 鳥巢爆炸頭
+                    ctx.beginPath();
+                    ctx.arc(faceX - r * 0.2, faceY - r * 0.35, r * 0.18, 0, Math.PI * 2);
+                    ctx.arc(faceX, faceY - r * 0.45, r * 0.22, 0, Math.PI * 2);
+                    ctx.arc(faceX + r * 0.2, faceY - r * 0.35, r * 0.18, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // 逗趣禿頭中分
+                    ctx.beginPath();
+                    ctx.arc(faceX - r * 0.35, faceY - r * 0.2, r * 0.12, 0, Math.PI * 2);
+                    ctx.arc(faceX + r * 0.35, faceY - r * 0.2, r * 0.12, 0, Math.PI * 2);
+                    ctx.fill();
+                    // 幾根呆毛
+                    ctx.strokeStyle = '#451a03';
+                    ctx.lineWidth = 1.8;
+                    ctx.beginPath();
+                    ctx.moveTo(faceX, faceY - r * 0.42);
+                    ctx.quadraticCurveTo(faceX - r * 0.1, faceY - r * 0.6, faceX - r * 0.2, faceY - r * 0.65);
+                    ctx.moveTo(faceX, faceY - r * 0.42);
+                    ctx.quadraticCurveTo(faceX + r * 0.15, faceY - r * 0.6, faceX + r * 0.3, faceY - r * 0.55);
+                    ctx.stroke();
+                }
+            }
+
+            // ==========================================
+            // 3. 五大趣味骨折姿勢繪製核心
+            // ==========================================
+            if (pose === 0) {
+                // 【姿勢 A：動漫雅姆查 Yamcha Crater】
+                // 縮成一團、不自然反關節折疊
+                // 地面撞擊波坑
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, r * 1.5, r * 1.2, 0, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 畫腿 (曲著腿)
+                drawPart(() => {
+                    ctx.fillStyle = pantsColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 0.3, r * 0.2, r * 0.8, r * 0.4, 5); // 大腿
+                    ctx.roundRect(r * 0.2, -r * 0.1, r * 0.3, r * 0.7, 5); // 折返的小腿
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // 露出黃色條紋襪子與飛掉的鞋頭
+                    ctx.fillStyle = socksColor;
+                    ctx.fillRect(r * 0.22, r * 0.5, r * 0.26, r * 0.15);
+                });
+
+                // 畫軀幹 (捲曲著側睡姿勢)
+                drawPart(() => {
+                    ctx.fillStyle = clothesColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 0.6, -r * 0.4, r * 1.1, r * 0.8, 8);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // 安全背心反光條
+                    ctx.fillStyle = '#fef08a';
+                    ctx.fillRect(-r * 0.4, -r * 0.3, r * 0.15, r * 0.6);
+                    ctx.fillRect(-r * 0.1, -r * 0.3, r * 0.15, r * 0.6);
+                });
+
+                // 畫反折的手臂
+                drawPart(() => {
+                    ctx.fillStyle = clothesColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 0.8, -r * 0.6, r * 0.3, r * 0.7, 3); // 上臂
+                    ctx.roundRect(-r * 0.95, -r * 0.9, r * 0.4, r * 0.3, 3); // 不自然手肘
+                    ctx.fill();
+                    ctx.stroke();
+                });
+
+                // 頭部
+                drawFaceAndHair(-r * 0.2, -r * 0.6, false);
+
+            } 
+            else if (pose === 1) {
+                // 【姿勢 B：派大星正面癱平 Splat Starfish】
+                // 臉朝下趴著，四肢大字形攤平
+                // 雙臂直角橫向
+                drawPart(() => {
+                    ctx.fillStyle = clothesColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 1.1, -r * 0.2, r * 0.6, r * 0.3, 3); // 左手
+                    ctx.roundRect(r * 0.5, -r * 0.2, r * 0.6, r * 0.3, 3);  // 右手
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // 露出來的手掌
+                    ctx.fillStyle = skinColor;
+                    ctx.beginPath();
+                    ctx.arc(-r * 1.2, -r * 0.05, r * 0.15, 0, Math.PI * 2);
+                    ctx.arc(r * 1.2, -r * 0.05, r * 0.15, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // 雙腿直角大字
+                drawPart(() => {
+                    ctx.fillStyle = pantsColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 0.8, r * 0.4, r * 0.35, r * 0.8, 4); // 左腿
+                    ctx.roundRect(r * 0.45, r * 0.4, r * 0.35, r * 0.8, 4); // 右腿
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // 露出的彩色條紋襪子
+                    ctx.fillStyle = socksColor;
+                    ctx.fillRect(-r * 0.75, r * 1.15, r * 0.25, r * 0.15);
+                    ctx.fillRect(r * 0.5, r * 1.15, r * 0.25, r * 0.15);
+                });
+
+                // 軀幹
+                drawPart(() => {
+                    ctx.fillStyle = clothesColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 0.5, -r * 0.3, r * 1.0, r * 0.8, 6);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+
+                // 趴地：露出後腦杓 (看不到臉)
+                drawFaceAndHair(0, -r * 0.45, true);
+            } 
+            else if (pose === 2) {
+                // 【姿勢 C：麻花捲折疊 Twisted Pretzel】
+                // 極度扭曲、雙腿往後翻折 180 度
+
+                // 歪七扭八的骨折腿
+                drawPart(() => {
+                    ctx.fillStyle = pantsColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    // 左腿歪向天頂
+                    ctx.roundRect(-r * 0.6, -r * 0.6, r * 0.3, r * 0.7, 4);
+                    // 右腿盤結在一起
+                    ctx.roundRect(0, r * 0.1, r * 0.7, r * 0.35, 4);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 露出白骨折尖角 (搞笑但不血腥的亮白骨折骨頭)
+                    ctx.fillStyle = boneColor;
+                    ctx.beginPath();
+                    ctx.moveTo(-r * 0.45, -r * 0.6);
+                    ctx.lineTo(-r * 0.3, -r * 0.8);
+                    ctx.lineTo(-r * 0.2, -r * 0.6);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                });
+
+                // 身體
+                drawPart(() => {
+                    ctx.fillStyle = clothesColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 0.4, -r * 0.2, r * 0.8, r * 0.6, 5);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+
+                // 扭斷感的手臂
+                drawPart(() => {
+                    ctx.fillStyle = clothesColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.roundRect(r * 0.3, -r * 0.4, r * 0.6, r * 0.25, 2);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+
+                // 頭歪成 90 度
+                drawFaceAndHair(-r * 0.4, -r * 0.1, false);
+            } 
+            else if (pose === 3) {
+                // 【姿勢 D：臉部煞車滑行 Ragdoll Slide】
+                // 頭前腳後、呈流線形滑倒姿勢
+                // 滑動中的腿部
+                drawPart(() => {
+                    ctx.fillStyle = pantsColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 0.1, r * 0.2, r * 0.9, r * 0.3, 4);
+                    ctx.roundRect(0, r * 0.5, r * 0.8, r * 0.3, 4);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+
+                // 磨損的衣服軀幹
+                drawPart(() => {
+                    ctx.fillStyle = clothesColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 0.7, -r * 0.25, r * 0.9, r * 0.65, 5);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // 衣服破損露出的皮膚
+                    ctx.fillStyle = skinColor;
+                    ctx.beginPath();
+                    ctx.arc(-r * 0.3, 0, r * 0.18, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // 滑行抱頭手臂
+                drawPart(() => {
+                    ctx.fillStyle = clothesColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 1.0, -r * 0.4, r * 0.6, r * 0.25, 2);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+
+                // 臉朝下滑行貼地
+                drawFaceAndHair(-r * 0.8, -r * 0.1, false);
+            } 
+            else {
+                // 【姿勢 E：擔架大翻車 Stretcher Fail】
+                // 伴隨著壞掉的擔架與打結的被單
+                // 斷成兩半的急救擔架木板
+                drawPart(() => {
+                    ctx.fillStyle = '#b45309'; // 棕色擔架桿
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2.5;
+                    // 上半部擔架
+                    ctx.fillRect(-r * 0.8, -r * 0.7, r * 0.15, r * 1.4);
+                    // 下半部斷裂折角擔架
+                    ctx.save();
+                    ctx.translate(r * 0.3, 0);
+                    ctx.rotate(0.6);
+                    ctx.fillRect(-r * 0.1, -r * 0.7, r * 0.15, r * 1.4);
+                    ctx.restore();
+                    
+                    // 擔架白布網
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.beginPath();
+                    ctx.moveTo(-r * 0.65, -r * 0.5);
+                    ctx.lineTo(r * 0.1, -r * 0.3);
+                    ctx.lineTo(r * 0.1, r * 0.3);
+                    ctx.lineTo(-r * 0.65, r * 0.5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                });
+
+                // 像木乃伊般被白紗布裹住的下半身
+                drawPart(() => {
+                    ctx.fillStyle = '#f1f5f9';
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.roundRect(-r * 0.3, -r * 0.2, r * 0.9, r * 0.5, 4);
+                    ctx.fill();
+                    ctx.stroke();
+                    // 纏繞線條
+                    ctx.strokeStyle = '#94a3b8';
+                    ctx.beginPath();
+                    ctx.moveTo(-r * 0.1, -r * 0.2); ctx.lineTo(-r * 0.1, r * 0.3);
+                    ctx.moveTo(r * 0.2, -r * 0.2); ctx.lineTo(r * 0.2, r * 0.3);
+                    ctx.stroke();
+                });
+
+                // 白被單露出的頭
+                drawFaceAndHair(-r * 0.4, -r * 0.3, false);
+            }
+
+            // ==========================================
+            // 4. 眼冒金星旋轉特效 (繞著頭轉的眩暈黃星星)
+            // ==========================================
+            const starTimer = Date.now() * 0.005;
+            const starX1 = Math.cos(starTimer) * r * 0.6;
+            const starY1 = Math.sin(starTimer) * r * 0.3 - r * 0.8;
+            const starX2 = Math.cos(starTimer + Math.PI) * r * 0.6;
+            const starY2 = Math.sin(starTimer + Math.PI) * r * 0.3 - r * 0.8;
+
+            ctx.fillStyle = '#facc15';
+            ctx.font = `bold ${Math.round(r * 0.38)}px sans-serif`;
+            ctx.fillText('★', starX1, starY1);
+            ctx.fillText('★', starX2, starY2);
+
+            ctx.restore();
+        }
+
+        // --- STREAMING_CHUNK: Setting up the master rendering loop and dashed road lines... ---
         // --- 繪製畫面主入口 ---
         function draw() {
             ctx.shadowColor = 'transparent';
@@ -1073,27 +1524,23 @@
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // ==========================================
-            // 【馬路虚線分隔線】大幅調亮並優化虛線樣式，保證清晰可見
-            // ==========================================
-            ctx.strokeStyle = '#334155'; // 大幅調亮為 slate-700，在深邃色背景下高反差且舒適
-            ctx.lineWidth = 1.5;         // 微增粗度，大幅提升辨識度
-            ctx.setLineDash([6, 12]);    // 調整虛線比例（線段 6像素、間距 12像素），外觀更像實體柏油路
+            // 【馬路虚線分隔線】
+            ctx.strokeStyle = '#334155'; 
+            ctx.lineWidth = 1.5;         
+            ctx.setLineDash([6, 12]);    
             
             for(let i = 1; i < TILE_COUNT; i++) {
-                // 垂直虛線
                 ctx.beginPath();
                 ctx.moveTo(i * TILE_SIZE, 0);
                 ctx.lineTo(i * TILE_SIZE, canvas.height);
                 ctx.stroke();
                 
-                // 水平虛線
                 ctx.beginPath();
                 ctx.moveTo(0, i * TILE_SIZE);
                 ctx.lineTo(canvas.width, i * TILE_SIZE);
                 ctx.stroke();
             }
-            ctx.setLineDash([]); // 恢復實線繪製
+            ctx.setLineDash([]); 
 
             // 立體陰影
             ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
@@ -1101,20 +1548,35 @@
             ctx.shadowOffsetX = 3;
             ctx.shadowOffsetY = 3;
 
-            // 根據主題繪製食物
             if (currentTheme === 'snake') {
                 drawApple(food.x, food.y);
                 drawClassicSnake();
             } else {
-                drawInjuredPerson(food.x, food.y);
+                // 救護車主題：如果發生車禍，則繪製大量橫七豎八、飛濺全場、超級精細搞笑的流血趣味人體！
+                if ((status === 'gameover' || status === 'crash_view')) {
+                    // 1. 先畫掉在地上的醫療零配件
+                    scatteredMedicalItems.forEach(item => {
+                        drawScatteredItem(item);
+                    });
+                    // 2. 畫甩在地上不省人事的巨型傷患
+                    if (deadBodies.length > 0) {
+                        deadBodies.forEach(body => {
+                            drawDetailedDeadBody(body);
+                        });
+                    }
+                }
+                
+                // 如果不是在失敗檢視下，正常繪製受傷等待被救的人
+                if (status !== 'gameover' && status !== 'crash_view') {
+                    drawInjuredPerson(food.x, food.y);
+                }
+                
                 drawRescueAmbulance();
             }
 
             // 安全緩衝狀態警告
             if (bufferActive) {
                 ctx.save();
-                
-                // 決定警告邊框顏色
                 const warningColor = bufferType === 'wall' ? '#ef4444' : '#f97316';
                 ctx.shadowColor = warningColor;
                 ctx.shadowBlur = 15;
@@ -1123,7 +1585,6 @@
                 ctx.strokeRect(0, 0, canvas.width, canvas.height);
                 ctx.restore();
 
-                // 決定提示文字
                 let bufferText = "";
                 if (currentTheme === 'ambulance') {
                     bufferText = bufferType === 'wall' ? '🚨 倒車雷達! 撞牆緩衝自救中 🚨' : '🚨 追尾注意! 自撞緩衝自救中 🚨';
@@ -1178,6 +1639,7 @@
             initGame();
             status = 'playing';
             overlay.classList.add('hidden');
+            failBanner.classList.add('hidden');
             
             clearTimeout(gameLoopTimer);
             cancelAnimationFrame(uiUpdateTimer);
@@ -1185,9 +1647,10 @@
             uiLoop();
         }
 
-        // --- 任務結束 ---
+        // --- STREAMING_CHUNK: Calculating explosive ambulance crash dispersal coordinates... ---
+        // --- 任務結束第一步：車禍鑑賞期 (啟動「全員大爆炸噴飛」計算) ---
         function gameOver() {
-            status = 'gameover';
+            status = 'crash_view';
             clearTimeout(gameLoopTimer);
             cancelAnimationFrame(uiUpdateTimer);
             
@@ -1199,21 +1662,105 @@
             bufferType = null;
             
             playFailSound(); 
+
+            // =======================================================
+            // 🚨 趣味核心：全員噴飛大甩出，完全突破格子，隨機擴散至整塊 Canvas 🚨
+            // =======================================================
+            if (currentTheme === 'ambulance' && score > 0) {
+                deadBodies = [];
+                scatteredMedicalItems = [];
+
+                // 噴飛人數 = 已救人數
+                const passengerCount = score;
+
+                for (let i = 0; i < passengerCount; i++) {
+                    // 以撞毀時蛇頭/車頭位置為放射核心，向整張畫布大範圍隨機拋射
+                    const headSegment = snake[0];
+
+                    // 【誇張散落感算法】：
+                    // 給予超高、不受限的隨機向量，甚至可以直接飛到 Canvas 的邊界！
+                    // 角度範圍 (0~360度) 
+                    const angle = Math.random() * Math.PI * 2;
+                    // 拋射距離：40像素(2格) 到 250像素(12格) 以上不等，實現全圖散落效果！
+                    const distance = 40 + Math.random() * 220; 
+
+                    // 計算最後落點像素坐標 (並限制在 Canvas 合理可見範圍內，預防完全飛出去)
+                    const padding = TILE_SIZE * 1.5;
+                    const finalPx = Math.max(padding, Math.min(canvas.width - padding, headSegment.x * TILE_SIZE + TILE_SIZE/2 + Math.cos(angle) * distance));
+                    const finalPy = Math.max(padding, Math.min(canvas.height - padding, headSegment.y * TILE_SIZE + TILE_SIZE/2 + Math.sin(angle) * distance));
+
+                    // 衣服配色
+                    const clothesColors = ['#f97316', '#ef4444', '#ec4899', '#a855f7', '#10b981', '#eab308'];
+                    const chosenClothes = clothesColors[Math.floor(Math.random() * clothesColors.length)];
+
+                    // 皮膚與條紋襪配色
+                    const skinColors = ['#fed7aa', '#fbcfe8', '#ffedd5', '#fef3c7'];
+                    const chosenSkin = skinColors[Math.floor(Math.random() * skinColors.length)];
+                    const socksColors = ['#eab308', '#2563eb', '#16a34a', '#db2777'];
+                    const chosenSocks = socksColors[Math.floor(Math.random() * socksColors.length)];
+
+                    deadBodies.push({
+                        px: finalPx,
+                        py: finalPy,
+                        angle: Math.random() * Math.PI * 2, // 隨機骨折躺地旋轉角
+                        pose: Math.floor(Math.random() * 5), // 0到4：五種超級骨折搞笑姿勢
+                        scale: 1.4 + Math.random() * 0.9,   // 放大至格子 1.4 ~ 2.3 倍，極具視覺衝擊力
+                        clothesColor: chosenClothes,
+                        skinColor: chosenSkin,
+                        hairStyle: Math.floor(Math.random() * 2), // 2種逗趣髮型
+                        socksColor: chosenSocks
+                    });
+
+                    // 同時噴出 1~2 個搞笑醫療小配件 (針筒、藥丸、食鹽水袋、醫療箱)
+                    const itemTypes = ['box', 'pill', 'syringe', 'drip'];
+                    const itemAngle = Math.random() * Math.PI * 2;
+                    const itemDistance = distance + (Math.random() * 40 - 20); // 與主人分開一點點
+                    
+                    const itemPx = Math.max(10, Math.min(canvas.width - 10, headSegment.x * TILE_SIZE + TILE_SIZE/2 + Math.cos(itemAngle) * itemDistance));
+                    const itemPy = Math.max(10, Math.min(canvas.height - 10, headSegment.y * TILE_SIZE + TILE_SIZE/2 + Math.sin(itemAngle) * itemDistance));
+
+                    scatteredMedicalItems.push({
+                        px: itemPx,
+                        py: itemPy,
+                        type: itemTypes[Math.floor(Math.random() * itemTypes.length)],
+                        angle: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+
+            // 重新繪製更新後的慘烈大散落死傷現場
+            draw();
+            
+            // 顯示不遮擋中央畫面的輕量級橫幅
+            if (currentTheme === 'ambulance') {
+                failBannerTitle.innerText = "🚑 發生車禍！救援任務失敗 🚨";
+                failBannerDesc.innerHTML = `已救助的 <span class="text-red-400 font-bold">${score}</span> 人全被甩出車外！點擊此處 或 按 [空白鍵] 查看結算選單`;
+            } else {
+                failBannerTitle.innerText = "🐍 挑戰失敗！貪食蛇陣亡 💀";
+                failBannerDesc.innerHTML = `本次獲得 <span class="text-green-400 font-bold">${score}</span> 分！點擊此處 或 按 [空白鍵] 查看結算選單`;
+            }
+            failBanner.classList.remove('hidden');
+        }
+
+        // --- 任務結束第二步：經由確認，顯示完整的難度與重新開始選單 ---
+        function confirmCrashView() {
+            status = 'gameover';
+            failBanner.classList.add('hidden');
             
             if (currentTheme === 'ambulance') {
                 overlayTitle.innerText = "救援任務結束";
                 overlayTitle.className = "text-3xl font-bold text-red-500 mb-2";
                 overlayDesc.innerHTML = `
+                    車禍把已救治的 <span class="text-yellow-400 font-bold">${score}</span> 人全部甩了出來！<br>
                     使用鍵盤 <span class="font-bold text-yellow-400">空白鍵 (Space)</span> 重新出發<br>
-                    遊玩時使用鍵盤 <span class="font-bold text-yellow-400">方向鍵 (↑↓←→)</span> 駕駛救護車<br>
                     <span class="text-xs text-gray-400">（或直接點擊下方按鈕）</span>
                 `;
             } else {
                 overlayTitle.innerText = "挑戰失敗";
                 overlayTitle.className = "text-3xl font-bold text-red-500 mb-2";
                 overlayDesc.innerHTML = `
+                    本次挑戰獲得 <span class="text-green-400 font-bold">${score}</span> 分！<br>
                     使用鍵盤 <span class="font-bold text-yellow-400">空白鍵 (Space)</span> 重新開始<br>
-                    遊玩時使用鍵盤 <span class="font-bold text-yellow-400">方向鍵 (↑↓←→)</span> 控制方向<br>
                     <span class="text-xs text-gray-400">（或直接點擊下方按鈕）</span>
                 `;
             }
@@ -1227,7 +1774,6 @@
             
             if (status !== 'playing') return;
 
-            // 處於「安全救援緩衝中」
             if (bufferActive) {
                 const targetX = snake[0].x + newDx;
                 const targetY = snake[0].y + newDy;
@@ -1250,7 +1796,6 @@
                 return;
             }
 
-            // 一般模式
             const lastDir = inputQueue.length > 0 ? inputQueue[inputQueue.length - 1] : { dx, dy };
             if (lastDir.dx !== -newDx && lastDir.dy !== -newDy) {
                 if (inputQueue.length < 2) {
@@ -1259,6 +1804,7 @@
             }
         }
 
+        // --- STREAMING_CHUNK: Binding system keyboard inputs and game control overrides... ---
         // --- 鍵盤事件監聽 ---
         window.addEventListener('keydown', (e) => {
             if(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
@@ -1270,6 +1816,8 @@
             if (e.code === 'Space') {
                 if (status === 'ready' || status === 'gameover') {
                     startGame();
+                } else if (status === 'crash_view') {
+                    confirmCrashView();
                 }
             } else if (e.code === 'ArrowUp') {
                 handleInput(0, -1);
@@ -1284,6 +1832,8 @@
 
         // --- 畫面按鈕事件監聽 ---
         btnStart.addEventListener('click', startGame);
+        failBanner.addEventListener('click', confirmCrashView);
+
         document.getElementById('btn-up').addEventListener('pointerdown', (e) => { e.preventDefault(); handleInput(0, -1); });
         document.getElementById('btn-down').addEventListener('pointerdown', (e) => { e.preventDefault(); handleInput(0, 1); });
         document.getElementById('btn-left').addEventListener('pointerdown', (e) => { e.preventDefault(); handleInput(-1, 0); });
