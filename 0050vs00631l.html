@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>0050 vs 00631L(正二) 長期投資與價差影響模擬</title>
+    <title>0050 vs 00631L(正二) 長期投資與價差影響模擬 (每日統計版)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -107,7 +107,7 @@
             left: 50%;
             transform: translateX(-50%);
             width: 320px;
-            max-width: 85vw; /* 確保在手機螢幕上不會超出邊界 */
+            max-width: 85vw;
             background-color: #fff;
             color: #333;
             text-align: left;
@@ -121,7 +121,7 @@
             font-weight: normal;
             transition: opacity 0.2s, visibility 0.2s;
             line-height: 1.6;
-            pointer-events: none; /* 防止遮擋滑鼠軌跡 */
+            pointer-events: none;
         }
         .tooltip-content::after {
             content: "";
@@ -133,7 +133,6 @@
             border-style: solid;
             border-color: #fff transparent transparent transparent;
         }
-        /* 支援滑鼠懸浮與手機點擊顯示 */
         .info-icon:hover .tooltip-content,
         .info-icon:focus .tooltip-content {
             visibility: visible;
@@ -146,9 +145,9 @@
 <div class="container">
     <h1>0050 vs 00631L(正二) 長期投資與價差影響模擬</h1>
     <div class="description">
-        本模型採「月遞迴」計算，精確模擬 2 倍槓桿的<strong>波動耗損</strong> (Beta Slippage)。<br>
-        輸入之「預期年化報酬率」將直接視為<strong>最終複合成長率(CAGR)之中位數目標</strong>。<br>
-        期貨價差影響將依權重分配：<strong>80% 集中於 7 月</strong>，其餘 20% 均分於另外 11 個月。
+        本模型採<strong>「每日遞迴 (250交易日/年)」</strong>計算，精確模擬 2 倍槓桿的<strong>波動耗損</strong>與<strong>盤中風險</strong>。<br>
+        輸入之「預期年化報酬率」將直接視為最終複合成長率(CAGR)之中位數目標。<br>
+        為兼顧運算效能，模擬次數設定為 2000 次；圖表將呈現該年度內發生虧損與落後的<strong>「平均天數比例」</strong>。
     </div>
 
     <div class="control-panel">
@@ -180,7 +179,7 @@
                         <ul style="margin: 8px 0 0 0; padding-left: 20px;">
                             <li>台股每年常態逆價差應為 <strong>-3%</strong>。</li>
                             <li>因配息由前一年獲利決定，應參考前一年的平均指數。</li>
-                            <li>當指數一年 because 除息減少 3% 的點數，應該輸入 <strong>0</strong>。</li>
+                            <li>當指數一年因為除息減少 3% 的點數，應該輸入 <strong>0</strong>。</li>
                             <li>若期貨與現貨「無價差」，則建議輸入 <strong>+2 ~ +3</strong>。</li>
                             <li>根據2026年5月期現貨正價差 1%，建議輸入 <strong>+3</strong>。</li>
                         </ul>
@@ -189,7 +188,8 @@
             </label>
             <input type="number" id="spread" value="1" step="0.1">
         </div>
-        <button class="btn-run" onclick="runSimulation()">重新執行蒙地卡羅模擬 (5000次)</button>
+        <!-- 將模擬次數調降為 2000 以應付每日計算的龐大迴圈量 -->
+        <button class="btn-run" onclick="runSimulation()">重新執行蒙地卡羅模擬 (2000次)</button>
     </div>
 
     <h2>1. 資產增長比較圖 (中位數 PR50)</h2>
@@ -197,12 +197,12 @@
         <canvas id="wealthChart"></canvas>
     </div>
 
-    <h2>2. 投資績效為「負數」的機率比較</h2>
+    <h2>2. 投資績效為「負數」的全年天數比例 (平均佔比)</h2>
     <div class="chart-wrapper">
         <canvas id="lossProbChart"></canvas>
     </div>
 
-    <h2>3. 00631L(正二) 資產「低於」0050 的相對落後機率</h2>
+    <h2>3. 00631L(正二) 資產「低於」0050 的全年天數比例 (平均佔比)</h2>
     <div class="chart-wrapper">
         <canvas id="underperformChart"></canvas>
     </div>
@@ -228,53 +228,79 @@
         const sigma = parseFloat(document.getElementById('sigma').value) / 100;
         const years = parseInt(document.getElementById('years').value);
         const spreadAnnual = parseFloat(document.getElementById('spread').value) / 100;
-        const simulations = 5000;
+        
+        // 【變更點】每日統計，一年250交易日。降低模擬次數維持網頁效能。
+        const simulations = 2000;
+        const tradingDaysPerYear = 250;
+        const dt = 1 / tradingDaysPerYear;
 
         // 設定價差權重分佈：7月(index 6)佔 80%，其他11個月平分剩下的 20%
         const spreadWeights = new Array(12).fill(0.20 / 11);
         spreadWeights[6] = 0.80; 
 
-        // 存放年度數據
+        // 存放所有模擬的年度數據與天數比例數據
         let paths0050 = [];
         let paths00631L = [];
+        let statsLoss50 = [];
+        let statsLoss2x = [];
+        let statsUnder = [];
         
         // 執行模擬
         for (let i = 0; i < simulations; i++) {
             let w50 = initialInvestment;
             let w2x = initialInvestment;
+            
             let path50 = [w50];
             let path2x = [w2x];
+            let loss50Prob = [0];
+            let loss2xProb = [0];
+            let underProb = [0];
 
             for (let y = 1; y <= years; y++) {
-                // 每個月遞迴計算
-                for (let m = 0; m < 12; m++) {
+                // 用來計算單一年度內，發生虧損或落後的天數
+                let dLoss50 = 0;
+                let dLoss2x = 0;
+                let dUnder = 0;
+
+                // 每「天」遞迴計算
+                for (let d = 1; d <= tradingDaysPerYear; d++) {
+                    // 推算目前是哪個月 (0~11)，以分配期貨價差權重
+                    let m = Math.min(11, Math.floor((d - 1) / (tradingDaysPerYear / 12)));
                     let z = randomNormal();
                     
-                    // 【修正邏輯】：使用者輸入的 mu 視為「幾何複合報酬率(CAGR)」
-                    // 為了讓中位數不受波動耗損影響，我們直接以 mu 作為漂移項基礎。
-                    // 這樣 1倍指數的中位數經過 t 年後會剛好收斂於 e^(mu * t)
-                    let r50_log = (mu) / 12 + sigma * Math.sqrt(1/12) * z;
+                    // 1倍指數每日變化 (直接以 mu 作為 CAGR 基礎)
+                    let r50_log = mu * dt + sigma * Math.sqrt(dt) * z;
                     w50 = w50 * Math.exp(r50_log);
 
-                    // 2倍槓桿 (00631L) 的月對數報酬
-                    // 如果 1倍的複合報酬是 mu，2倍槓桿在完美的無耗損情況下複合報酬應為 2*mu。
-                    // 但 2倍槓桿仍需承受額外的波動耗損 (2σ)²/2 - 2*(σ²/2) = σ²。
-                    // 所以 2倍的漂移項為 2*mu - σ²。
-                    // 加上使用者輸入的期貨價差影響 spreadEffect。
-                    // 邏輯：正值為正價差(耗損)，故加上負號；負值為逆價差(紅利)，負負得正。2倍槓桿需自動乘以2。
-                    let spreadEffect = (-spreadAnnual * 2) * spreadWeights[m];
-                    let r2x_log = (2 * mu - Math.pow(sigma, 2)) / 12 + 2 * sigma * Math.sqrt(1/12) * z + spreadEffect;
+                    // 2倍槓桿每日變化 (包含波動耗損校正與每日價差影響)
+                    // 將年度價差依照該月份權重換算為「每日影響」
+                    let dailySpreadEffect = (-spreadAnnual * 2) * spreadWeights[m] * (12 / tradingDaysPerYear);
+                    let r2x_log = (2 * mu - Math.pow(sigma, 2)) * dt + 2 * sigma * Math.sqrt(dt) * z + dailySpreadEffect;
                     w2x = w2x * Math.exp(r2x_log);
+
+                    // 【每日統計點】紀錄每一天是否處於落後或虧損狀態
+                    if (w50 < initialInvestment) dLoss50++;
+                    if (w2x < initialInvestment) dLoss2x++;
+                    if (w2x < w50) dUnder++;
                 }
-                // 紀錄每年年底的資產
+                
+                // 紀錄每年「年底」的資產 (圖表一用)
                 path50.push(w50);
                 path2x.push(w2x);
+                
+                // 紀錄這一年中，發生虧損或落後的天數「佔比 (%)」(圖表二、三用)
+                loss50Prob.push((dLoss50 / tradingDaysPerYear) * 100);
+                loss2xProb.push((dLoss2x / tradingDaysPerYear) * 100);
+                underProb.push((dUnder / tradingDaysPerYear) * 100);
             }
             paths0050.push(path50);
             paths00631L.push(path2x);
+            statsLoss50.push(loss50Prob);
+            statsLoss2x.push(loss2xProb);
+            statsUnder.push(underProb);
         }
 
-        // 統計運算
+        // 統計運算 (跨 2000 次模擬取平均/中位數)
         let labels = ['第 0 年'];
         let median50 = [initialInvestment], median2x = [initialInvestment];
         let prob50 = [0], prob2x = [0];
@@ -283,30 +309,29 @@
         for (let y = 1; y <= years; y++) {
             labels.push(`第 ${y} 年`);
             let vals50 = [], vals2x = [];
-            let loss50 = 0, loss2x = 0;
-            let underperformCount = 0;
+            let sumL50 = 0, sumL2x = 0, sumU = 0;
 
             for (let i = 0; i < simulations; i++) {
-                let v50 = paths0050[i][y];
-                let v2x = paths00631L[i][y];
+                // 收集圖表一的資產數據
+                vals50.push(paths0050[i][y]);
+                vals2x.push(paths00631L[i][y]);
                 
-                vals50.push(v50);
-                vals2x.push(v2x);
-
-                if (v50 < initialInvestment) loss50++;
-                if (v2x < initialInvestment) loss2x++;
-                if (v2x < v50) underperformCount++;
+                // 收集圖表二、三的天數佔比數據
+                sumL50 += statsLoss50[i][y];
+                sumL2x += statsLoss2x[i][y];
+                sumU += statsUnder[i][y];
             }
 
+            // 資產取中位數
             vals50.sort((a, b) => a - b);
             vals2x.sort((a, b) => a - b);
-
             median50.push(vals50[Math.floor(simulations * 0.50)]);
             median2x.push(vals2x[Math.floor(simulations * 0.50)]);
 
-            prob50.push((loss50 / simulations) * 100);
-            prob2x.push((loss2x / simulations) * 100);
-            probUnderperform.push((underperformCount / simulations) * 100);
+            // 天數佔比取期望值(平均值)
+            prob50.push(sumL50 / simulations);
+            prob2x.push(sumL2x / simulations);
+            probUnderperform.push(sumU / simulations);
         }
 
         renderCharts(labels, median50, median2x, prob50, prob2x, probUnderperform, years, initialInvestment);
@@ -376,7 +401,7 @@
             }
         });
 
-        // 2. 虧損機率圖
+        // 2. 虧損天數佔比圖
         const ctxProb = document.getElementById('lossProbChart').getContext('2d');
         lossProbChartInstance = new Chart(ctxProb, {
             type: 'bar',
@@ -384,13 +409,13 @@
                 labels: labels.slice(1),
                 datasets: [
                     {
-                        label: '00631L 正二 虧損機率 (%)',
+                        label: '00631L 該年虧損天數佔比 (%)',
                         data: prob2x.slice(1),
                         backgroundColor: 'rgba(231, 76, 60, 0.7)',
                         borderWidth: 1
                     },
                     {
-                        label: '0050 虧損機率 (%)',
+                        label: '0050 該年虧損天數佔比 (%)',
                         data: prob50.slice(1),
                         backgroundColor: 'rgba(52, 152, 219, 0.7)',
                         borderWidth: 1
@@ -407,7 +432,7 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        title: { display: true, text: '虧損機率 (%)' },
+                        title: { display: true, text: '天數比例 (%)' },
                         ticks: { callback: function(value) { return value + '%'; } }
                     }
                 },
@@ -421,7 +446,7 @@
             }
         });
 
-        // 3. 績效落後機率圖
+        // 3. 績效落後天數佔比圖
         const ctxUnder = document.getElementById('underperformChart').getContext('2d');
         underperformChartInstance = new Chart(ctxUnder, {
             type: 'bar',
@@ -429,7 +454,7 @@
                 labels: labels.slice(1),
                 datasets: [
                     {
-                        label: '00631L 資產低於 0050 之機率 (%)',
+                        label: '00631L 資產低於 0050 之天數佔比 (%)',
                         data: probUnderperform.slice(1),
                         backgroundColor: 'rgba(241, 196, 15, 0.7)',
                         borderColor: 'rgba(243, 156, 18, 1)',
@@ -448,7 +473,7 @@
                     y: {
                         beginAtZero: true,
                         max: 100, // 機率最高固定在100%以利觀察變化
-                        title: { display: true, text: '落後機率 (%)' },
+                        title: { display: true, text: '落後天數比例 (%)' },
                         ticks: { callback: function(value) { return value + '%'; } }
                     }
                 },
