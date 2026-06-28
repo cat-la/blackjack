@@ -2,27 +2,56 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <!-- 加入這行：強制手機瀏覽器使用設備寬度，比例為 1.0 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>美股正二真實 vs 理論長期數據回測看板</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* --- 基礎樣式 --- */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1300px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { max-width: 1300px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
         h1 { text-align: center; color: #1f497d; margin-bottom: 30px; }
-        .controls { display: flex; justify-content: center; gap: 20px; align-items: center; background: #eef2f7; padding: 15px; border-radius: 8px; margin-bottom: 25px; }
+        .controls { display: flex; justify-content: center; gap: 20px; align-items: center; background: #eef2f7; padding: 15px; border-radius: 8px; margin-bottom: 25px; flex-wrap: wrap; }
         .controls label { font-weight: bold; color: #444; }
-        .controls input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        .btn { padding: 8px 20px; background: #1f497d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .controls input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; box-sizing: border-box; } /* 設為 16px 避免 iOS 自動縮放 */
+        .btn { padding: 10px 20px; background: #1f497d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px; }
         .btn:hover { background: #2c3e50; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
         .card { background: #fafafa; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; }
         .card h3 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        
+        /* 表格增加橫向捲軸防破版 */
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 300px; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background-color: #f1f5f9; font-weight: bold; }
+        
         .chart-block { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .chart-container { position: relative; height: 350px; width: 100%; }
         h2 { color: #2c3e50; font-size: 18px; margin-top: 0; margin-bottom: 15px; border-left: 4px solid #1f497d; padding-left: 10px; }
         .ratio-badge { font-weight: bold; color: #c00000; }
+
+        /* --- 手機版響應式設計 (RWD) --- */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            h1 { font-size: 20px; margin-bottom: 20px; }
+            
+            /* 控制區塊改為直排，按鈕與輸入框滿版，方便手指點擊 */
+            .controls { flex-direction: column; align-items: stretch; gap: 12px; }
+            .controls div { display: flex; flex-direction: column; gap: 5px; }
+            
+            /* 數據卡片改為單排顯示 */
+            .stats-grid { grid-template-columns: 1fr; }
+            .card { padding: 15px; }
+            .card h3 { font-size: 16px; }
+            th, td { padding: 8px 5px; font-size: 14px; }
+            
+            /* 圖表區塊在手機上稍微縮短高度 */
+            .chart-block { padding: 15px 10px; }
+            .chart-container { height: 250px; }
+            h2 { font-size: 15px; }
+        }
     </style>
 </head>
 <body>
@@ -31,34 +60,42 @@
     <h1>📊 美股正二真實 vs 理論長期數據動態分析看板</h1>
     
     <div class="controls">
-        <label for="startDate">開始日期：</label>
-        <input type="date" id="startDate" min="2006-06-19" max="2026-06-25" value="2006-06-19">
-        <label for="endDate">結束日期：</label>
-        <input type="date" id="endDate" min="2006-06-19" max="2026-06-25" value="2026-06-25">
+        <div>
+            <label for="startDate">開始日期：</label>
+            <input type="date" id="startDate" min="2006-06-19" max="2026-06-25" value="2006-06-19">
+        </div>
+        <div>
+            <label for="endDate">結束日期：</label>
+            <input type="date" id="endDate" min="2006-06-19" max="2026-06-25" value="2026-06-25">
+        </div>
         <button class="btn" onclick="updateDashboard()">動態重新計算</button>
     </div>
     
     <div class="stats-grid">
         <div class="card">
             <h3>S&P 500 指數與正二 (SSO) 區間績效</h3>
-            <table>
-                <tr><th>標的名稱</th><th>區間含息總報酬</th><th>年化報酬率 (CAGR)</th></tr>
-                <tr><td>SPY (標普原型 1x)</td><td id="spyRet">-</td><td id="spyCagr">-</td></tr>
-                <tr><td>SSO (真實正二 2x)</td><td id="ssoRealRet">-</td><td id="ssoRealCagr">-</td></tr>
-                <tr><td>SSO (理論完美正二)</td><td id="ssoTheoRet">-</td><td id="ssoTheoCagr">-</td></tr>
-                <tr><td><b>期末真實價格 / 理論價格 (比值)</b></td><td id="ssoFinalRatio" class="ratio-badge" colspan="2">-</td></tr>
-            </table>
+            <div class="table-responsive">
+                <table>
+                    <tr><th>標的名稱</th><th>區間含息總報酬</th><th>年化報酬率 (CAGR)</th></tr>
+                    <tr><td>SPY (標普原型 1x)</td><td id="spyRet">-</td><td id="spyCagr">-</td></tr>
+                    <tr><td>SSO (真實正二 2x)</td><td id="ssoRealRet">-</td><td id="ssoRealCagr">-</td></tr>
+                    <tr><td>SSO (理論完美正二)</td><td id="ssoTheoRet">-</td><td id="ssoTheoCagr">-</td></tr>
+                    <tr><td><b>期末真實價格 / 理論價格 (比值)</b></td><td id="ssoFinalRatio" class="ratio-badge" colspan="2">-</td></tr>
+                </table>
+            </div>
         </div>
         
         <div class="card">
             <h3>NASDAQ 100 指數與正二 (QLD) 區間績效</h3>
-            <table>
-                <tr><th>標的名稱</th><th>區間含息總報酬</th><th>年化報酬率 (CAGR)</th></tr>
-                <tr><td>QQQ (那指原型 1x)</td><td id="qqqRet">-</td><td id="qqqCagr">-</td></tr>
-                <tr><td>QLD (真實正二 2x)</td><td id="qldRealRet">-</td><td id="qldRealCagr">-</td></tr>
-                <tr><td>QLD (理論完美正二)</td><td id="qldTheoRet">-</td><td id="qldTheoCagr">-</td></tr>
-                <tr><td><b>期末真實價格 / 理論價格 (比值)</b></td><td id="qldFinalRatio" class="ratio-badge" colspan="2">-</td></tr>
-            </table>
+            <div class="table-responsive">
+                <table>
+                    <tr><th>標的名稱</th><th>區間含息總報酬</th><th>年化報酬率 (CAGR)</th></tr>
+                    <tr><td>QQQ (那指原型 1x)</td><td id="qqqRet">-</td><td id="qqqCagr">-</td></tr>
+                    <tr><td>QLD (真實正二 2x)</td><td id="qldRealRet">-</td><td id="qldRealCagr">-</td></tr>
+                    <tr><td>QLD (理論完美正二)</td><td id="qldTheoRet">-</td><td id="qldTheoCagr">-</td></tr>
+                    <tr><td><b>期末真實價格 / 理論價格 (比值)</b></td><td id="qldFinalRatio" class="ratio-badge" colspan="2">-</td></tr>
+                </table>
+            </div>
         </div>
     </div>
     
@@ -235,6 +272,7 @@ function updateDashboard() {
 window.onload = function() {
     updateDashboard();
 };
+
 </script>
 </body>
 </html>
