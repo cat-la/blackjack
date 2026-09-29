@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>奧林匹克跑步 100M - 手機直式版 (數值校準)</title>
+  <title>奧林匹克跑步 100M - 手機直式版 (修復多點觸控)</title>
   <style>
     :root {
       --bg-color: #0b0f19;
@@ -246,7 +246,6 @@
       transform: scale(0.98);
     }
 
-    /* 手機專屬：巨型螢幕點擊衝刺大觸控區 */
     .touch-sprint-zone {
       position: relative;
       width: 100%;
@@ -802,6 +801,7 @@
       state = GameState.IDLE;
       startTime = 0;
       hasStartedTimer = false;
+      lastTapTimestamp = 0;
       distance = 0;
       speed = 0;
       stepCount = 0;
@@ -851,7 +851,6 @@
       }, 1600);
     }
 
-    // 核心衝刺推進 (比例精準校準：9 次/秒 完賽約 10.6 秒)
     function handleSprintStep() {
       audio.init();
 
@@ -1257,7 +1256,6 @@
           const elapsed = (now - startTime) / 1000;
           dispTime.textContent = elapsed.toFixed(2) + ' 秒';
 
-          // 校準阻力與滑行推進
           speed = Math.max(0, speed - 3.5 * dt);
 
           if (speed > 0) {
@@ -1295,34 +1293,49 @@
       requestAnimationFrame(gameLoop);
     }
 
+    // 防止多點觸控「五指拍屏一次算5次」作弊防護機制
+    let lastTapTimestamp = 0;
+    const MIN_TAP_INTERVAL_MS = 35; // 35ms 防抖間隔（相當於最高允許約 28.5 次/秒極限手速，杜絕多指同壓作弊）
+
+    function trySprintStep() {
+      const now = performance.now();
+      if (now - lastTapTimestamp >= MIN_TAP_INTERVAL_MS) {
+        lastTapTimestamp = now;
+        handleSprintStep();
+        return true;
+      }
+      return false;
+    }
+
+    // 觸控區：一次觸碰批次（即便五指同按）僅計算 1 次有效推進
     touchSprintZone.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const touch = e.changedTouches[i];
-        handleSprintStep();
-        spawnRipple(touch.clientX, touch.clientY);
+      if (trySprintStep()) {
+        if (e.changedTouches.length > 0) {
+          spawnRipple(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        }
       }
     }, { passive: false });
 
     touchSprintZone.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      handleSprintStep();
-      spawnRipple(e.clientX, e.clientY);
+      if (trySprintStep()) {
+        spawnRipple(e.clientX, e.clientY);
+      }
     });
 
+    // 點擊賽道畫布螢幕亦套用防多指同壓機制
     stageWrapper.addEventListener('touchstart', (e) => {
       if (state === GameState.RACING || state === GameState.SET) {
         e.preventDefault();
-        for (let i = 0; i < e.changedTouches.length; i++) {
-          handleSprintStep();
-        }
+        trySprintStep();
       }
     }, { passive: false });
 
     stageWrapper.addEventListener('mousedown', (e) => {
       if (state === GameState.RACING || state === GameState.SET) {
         e.preventDefault();
-        handleSprintStep();
+        trySprintStep();
       }
     });
 
