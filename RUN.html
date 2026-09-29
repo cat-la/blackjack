@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>奧林匹克跑步 100M - 手機直式版</title>
+  <title>奧林匹克跑步 100M - 手機直式版 (數值校準)</title>
   <style>
     :root {
       --bg-color: #0b0f19;
@@ -39,7 +39,6 @@
       overflow-x: hidden;
     }
 
-    /* 直式手機容器 */
     .game-container {
       background: var(--card-bg);
       border-radius: 20px;
@@ -53,7 +52,6 @@
       margin: auto 0;
     }
 
-    /* 頂部標題列 */
     .game-header {
       display: flex;
       justify-content: space-between;
@@ -115,7 +113,6 @@
       background: rgba(255, 255, 255, 0.2);
     }
 
-    /* 直式手機 HUD 雙排佈局 */
     .hud-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -168,7 +165,6 @@
       text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
     }
 
-    /* 遊戲畫布與賽道區域 */
     .stage-wrapper {
       position: relative;
       width: 100%;
@@ -226,7 +222,6 @@
     .banner-false { color: #ef4444; }
     .banner-finish { color: #f1c40f; font-size: 1.35rem; }
 
-    /* 比賽操作列 */
     .action-bar {
       display: flex;
       gap: 10px;
@@ -316,7 +311,6 @@
       margin-top: 4px;
     }
 
-    /* 點擊水波紋效果 */
     .touch-ripple {
       position: absolute;
       width: 60px;
@@ -388,7 +382,6 @@
 <body>
 
   <div class="game-container">
-    <!-- 頂部標題列 -->
     <header class="game-header">
       <div class="title-box">
         <div class="olympic-rings">
@@ -406,7 +399,6 @@
       </div>
     </header>
 
-    <!-- 直式手機 HUD (第 1 排) -->
     <section class="hud-grid">
       <div class="hud-card">
         <div class="hud-label">當前秒數 / TIME</div>
@@ -422,7 +414,6 @@
       </div>
     </section>
 
-    <!-- 直式手機 HUD (第 2 排) -->
     <section class="hud-grid-sub">
       <div class="hud-card">
         <div class="hud-label">即時時速 / SPEED</div>
@@ -434,7 +425,6 @@
       </div>
     </section>
 
-    <!-- 遊戲賽道畫布 (點擊此處亦可奔跑) -->
     <div class="stage-wrapper" id="stageWrapper">
       <canvas id="gameCanvas" width="640" height="400"></canvas>
       <div class="stage-overlay" id="stageOverlay">
@@ -442,13 +432,11 @@
       </div>
     </div>
 
-    <!-- 操作控制鈕 -->
     <div class="action-bar">
       <button class="btn-main" id="btnStartRace">🏁 開始比賽 (Ready)</button>
       <button class="btn-main" id="btnReset" style="display:none; background:#475569;">🔄 重新準備</button>
     </div>
 
-    <!-- 手機直式專用：巨型全螢幕雙手點擊衝刺區 (支援雙拇指/多指輪流交替) -->
     <div class="touch-sprint-zone" id="touchSprintZone">
       <div class="touch-split-guide">
         <div class="touch-half">
@@ -469,7 +457,6 @@
       💻 電腦亦可按鍵盤 <kbd>0</kbd> 鍵。鳴槍後按下第一次即刻計時！
     </div>
 
-    <!-- 歷史紀錄 -->
     <div class="history-card">
       <div class="history-title">
         <span>🏆 最佳成績榜 (Top 5)</span>
@@ -482,7 +469,6 @@
   </div>
 
   <script>
-    /* 1. 音效與合成器 (Web Audio API 原生合成) */
     class OlympicAudio {
       constructor() {
         this.ctx = null;
@@ -705,7 +691,6 @@
       }
     }
 
-    /* 2. 遊戲狀態與變數 */
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
@@ -866,6 +851,7 @@
       }, 1600);
     }
 
+    // 核心衝刺推進 (比例精準校準：9 次/秒 完賽約 10.6 秒)
     function handleSprintStep() {
       audio.init();
 
@@ -884,7 +870,6 @@
 
       const now = performance.now();
 
-      // 鳴槍後按下第一次按鍵/點擊螢幕才開始計時
       if (!hasStartedTimer) {
         startTime = now;
         hasStartedTimer = true;
@@ -892,9 +877,10 @@
 
       stepCount++;
 
-      const stepImpulse = 1.15;
+      // 校準數值：步長 0.67 米，速度增益 1.5，極限速度 12.0
+      const stepImpulse = 0.67;
       distance += stepImpulse;
-      speed = Math.min(speed + 1.8, 13.2);
+      speed = Math.min(speed + 1.5, 12.0);
 
       runAnimFrame = (runAnimFrame + 1) % 8;
       createDustParticles();
@@ -989,7 +975,6 @@
       }
     }
 
-    /* 3. 畫布渲染 */
     function drawStadium() {
       const skyGrad = ctx.createLinearGradient(0, 0, 0, 140);
       skyGrad.addColorStop(0, '#1a365d');
@@ -1272,10 +1257,11 @@
           const elapsed = (now - startTime) / 1000;
           dispTime.textContent = elapsed.toFixed(2) + ' 秒';
 
-          speed = Math.max(0, speed - 3.2 * dt);
+          // 校準阻力與滑行推進
+          speed = Math.max(0, speed - 3.5 * dt);
 
           if (speed > 0) {
-            distance += speed * dt * 0.45;
+            distance += speed * dt * 0.30;
             animTimer += speed * dt;
             if (animTimer > 0.12) {
               runAnimFrame = (runAnimFrame + 1) % 8;
@@ -1309,9 +1295,6 @@
       requestAnimationFrame(gameLoop);
     }
 
-    /* 4. 觸控與點擊螢幕事件監聽 */
-    
-    // 支援巨型衝刺區多點觸控 (雙拇指交替極速連打)
     touchSprintZone.addEventListener('touchstart', (e) => {
       e.preventDefault();
       for (let i = 0; i < e.changedTouches.length; i++) {
@@ -1321,14 +1304,12 @@
       }
     }, { passive: false });
 
-    // 滑鼠點擊觸控區
     touchSprintZone.addEventListener('mousedown', (e) => {
       e.preventDefault();
       handleSprintStep();
       spawnRipple(e.clientX, e.clientY);
     });
 
-    // 點擊賽道畫布螢幕亦可衝刺
     stageWrapper.addEventListener('touchstart', (e) => {
       if (state === GameState.RACING || state === GameState.SET) {
         e.preventDefault();
@@ -1345,7 +1326,6 @@
       }
     });
 
-    // 鍵盤 '0' 支援 (電腦端)
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space' && (state === GameState.IDLE || state === GameState.FINISHED)) {
         e.preventDefault();
