@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>奧林匹克跑步 100M - 手機直式版</title>
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #161f30;
+      --gold: #f1c40f;
+      --accent: #38bdf8;
+      --green: #10b981;
+      --red: #ef4444;
+      --text: #ffffff;
+      --text-dim: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 8px;
+      touch-action: manipulation;
+      overflow-x: hidden;
+    }
+
+    /* 直式手機容器 */
+    .game-container {
+      background: var(--card-bg);
+      border-radius: 20px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      width: 100%;
+      max-width: 480px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: auto 0;
+    }
+
+    /* 頂部標題列 */
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 8px;
+    }
+
+    .title-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .olympic-rings {
+      display: flex;
+      height: 22px;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .ring {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid;
+    }
+    .ring.blue { border-color: #0081C8; }
+    .ring.yellow { border-color: #FCB131; margin-top: 7px; }
+    .ring.black { border-color: #e2e8f0; }
+    .ring.green { border-color: #00A651; margin-top: 7px; }
+    .ring.red { border-color: #EE334E; }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #fff 40%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-audio {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 5px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+    .btn-audio:active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* 直式手機 HUD 雙排佈局 */
+    .hud-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .hud-grid-sub {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .hud-card {
+      background: rgba(11, 15, 25, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 8px 6px;
+      text-align: center;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+    }
+
+    .hud-label {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 2px;
+    }
+
+    .hud-value {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #38bdf8;
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+    }
+
+    .hud-value.gold {
+      color: var(--gold);
+      text-shadow: 0 0 8px rgba(241, 196, 15, 0.4);
+    }
+
+    .hud-value.accent {
+      color: #a78bfa;
+    }
+
+    .hud-value.cps {
+      color: #10b981;
+      text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+
+    /* 遊戲畫布與賽道區域 */
+    .stage-wrapper {
+      position: relative;
+      width: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+      background: #000;
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #87CEEB;
+      aspect-ratio: 16 / 10;
+    }
+
+    .stage-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      transition: all 0.3s;
+    }
+
+    .banner-text {
+      font-size: 1.6rem;
+      font-weight: 900;
+      text-shadow: 0 3px 12px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 255, 255, 0.4);
+      animation: pulse 0.5s infinite alternate;
+      letter-spacing: 1px;
+      text-align: center;
+      padding: 8px 16px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      max-width: 90%;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(0.96); }
+      to { transform: scale(1.04); }
+    }
+
+    .banner-ready { color: #f1c40f; }
+    .banner-set { color: #e67e22; }
+    .banner-go { color: #2ecc71; }
+    .banner-false { color: #ef4444; }
+    .banner-finish { color: #f1c40f; font-size: 1.35rem; }
+
+    /* 比賽操作列 */
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .btn-main {
+      flex: 1;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      padding: 12px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .btn-main:active {
+      transform: scale(0.98);
+    }
+
+    /* 手機專屬：巨型螢幕點擊衝刺大觸控區 */
+    .touch-sprint-zone {
+      position: relative;
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(180deg, #1e293b, #0f172a);
+      border: 3px solid rgba(239, 68, 68, 0.6);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.6), 0 8px 20px rgba(239, 68, 68, 0.25);
+      touch-action: none;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .touch-sprint-zone:active, .touch-sprint-zone.active {
+      background: linear-gradient(180deg, #2a1520, #38121a);
+      border-color: #ef4444;
+      box-shadow: inset 0 4px 15px rgba(239, 68, 68, 0.4);
+    }
+
+    .touch-split-guide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      pointer-events: none;
+    }
+
+    .touch-half {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px dashed rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+    .touch-half:last-child {
+      border-right: none;
+    }
+
+    .touch-half .icon-thumb {
+      font-size: 1.8rem;
+      margin-bottom: 4px;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+    }
+
+    .touch-badge {
+      background: #ef4444;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 12px;
+      margin-top: 4px;
+    }
+
+    /* 點擊水波紋效果 */
+    .touch-ripple {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.8) 0%, rgba(241, 196, 15, 0.4) 60%, transparent 100%);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.2);
+      animation: ripple-pop 0.35s ease-out forwards;
+    }
+
+    @keyframes ripple-pop {
+      0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
+    }
+
+    .footer-tips {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      text-align: center;
+      line-height: 1.4;
+    }
+    .footer-tips kbd {
+      background: #334155;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-weight: bold;
+    }
+
+    .history-card {
+      background: rgba(11, 15, 25, 0.6);
+      border-radius: 12px;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .history-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 0.8rem;
+    }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 6px;
+    }
+    .history-item.best {
+      background: rgba(241, 196, 15, 0.12);
+      border: 1px solid rgba(241, 196, 15, 0.25);
+      color: #fef08a;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <!-- 頂部標題列 -->
+    <header class="game-header">
+      <div class="title-box">
+        <div class="olympic-rings">
+          <div class="ring blue"></div>
+          <div class="ring yellow"></div>
+          <div class="ring black"></div>
+          <div class="ring green"></div>
+          <div class="ring red"></div>
+        </div>
+        <h1>奧林匹克跑步 100M</h1>
+      </div>
+      <div class="header-controls">
+        <button class="btn-audio" id="btnSound">🔊 音效: 開</button>
+        <button class="btn-audio" id="btnBgm">🎵 奧運曲: 開</button>
+      </div>
+    </header>
+
+    <!-- 直式手機 HUD (第 1 排) -->
+    <section class="hud-grid">
+      <div class="hud-card">
+        <div class="hud-label">當前秒數 / TIME</div>
+        <div class="hud-value" id="dispTime">0.00 秒</div>
+      </div>
+      <div class="hud-card">
+        <div class="hud-label">跑動距離 / DIST</div>
+        <div class="hud-value" id="dispDistance">0.0 米</div>
+      </div>
+      <div class="hud-card">
+        <div class="hud-label">每秒次數 / CPS</div>
+        <div class="hud-value cps" id="dispCps">0.0 次/秒</div>
+      </div>
+    </section>
+
+    <!-- 直式手機 HUD (第 2 排) -->
+    <section class="hud-grid-sub">
+      <div class="hud-card">
+        <div class="hud-label">即時時速 / SPEED</div>
+        <div class="hud-value accent" id="dispSpeed">0.0 km/h</div>
+      </div>
+      <div class="hud-card">
+        <div class="hud-label">最佳紀錄 / BEST</div>
+        <div class="hud-value gold" id="dispBest">--.-- 秒</div>
+      </div>
+    </section>
+
+    <!-- 遊戲賽道畫布 (點擊此處亦可奔跑) -->
+    <div class="stage-wrapper" id="stageWrapper">
+      <canvas id="gameCanvas" width="640" height="400"></canvas>
+      <div class="stage-overlay" id="stageOverlay">
+        <div class="banner-text" id="bannerText" style="display: none;">READY...</div>
+      </div>
+    </div>
+
+    <!-- 操作控制鈕 -->
+    <div class="action-bar">
+      <button class="btn-main" id="btnStartRace">🏁 開始比賽 (Ready)</button>
+      <button class="btn-main" id="btnReset" style="display:none; background:#475569;">🔄 重新準備</button>
+    </div>
+
+    <!-- 手機直式專用：巨型全螢幕雙手點擊衝刺區 (支援雙拇指/多指輪流交替) -->
+    <div class="touch-sprint-zone" id="touchSprintZone">
+      <div class="touch-split-guide">
+        <div class="touch-half">
+          <div class="icon-thumb">👆</div>
+          <div>左手 / 左拇指</div>
+          <span class="touch-badge">點擊螢幕</span>
+        </div>
+        <div class="touch-half">
+          <div class="icon-thumb">👆</div>
+          <div>右手 / 右拇指</div>
+          <span class="touch-badge">交替狂點</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-tips">
+      📱 <b>手機直接狂點上方紅色區域或螢幕</b>（雙手拇指輪流交替最快！）<br>
+      💻 電腦亦可按鍵盤 <kbd>0</kbd> 鍵。鳴槍後按下第一次即刻計時！
+    </div>
+
+    <!-- 歷史紀錄 -->
+    <div class="history-card">
+      <div class="history-title">
+        <span>🏆 最佳成績榜 (Top 5)</span>
+        <span style="font-size:0.7rem; color:#94a3b8;">自動存檔</span>
+      </div>
+      <ul class="history-list" id="historyList">
+        <li style="color:#64748b; text-align:center; padding:4px;">尚無紀錄，點擊開始挑戰吧！</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    /* 1. 音效與合成器 (Web Audio API 原生合成) */
+    class OlympicAudio {
+      constructor() {
+        this.ctx = null;
+        this.soundEnabled = true;
+        this.bgmEnabled = true;
+        this.bgmPlaying = false;
+        this.bgmOscillators = [];
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playBeep(freq = 440, duration = 0.25) {
+        if (!this.soundEnabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+      }
+
+      playGunshot() {
+        if (!this.soundEnabled) return;
+        this.init();
+        const t = this.ctx.currentTime;
+        const bufferSize = this.ctx.sampleRate * 0.4;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const noiseFilter = this.ctx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.setValueAtTime(1600, t);
+        noiseFilter.frequency.exponentialRampToValueAtTime(300, t + 0.35);
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(1.0, t);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.38);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+
+        const punch = this.ctx.createOscillator();
+        const punchGain = this.ctx.createGain();
+        punch.type = 'triangle';
+        punch.frequency.setValueAtTime(180, t);
+        punch.frequency.exponentialRampToValueAtTime(25, t + 0.25);
+        punchGain.gain.setValueAtTime(0.9, t);
+        punchGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+
+        punch.connect(punchGain);
+        punchGain.connect(this.ctx.destination);
+
+        noise.start(t);
+        punch.start(t);
+        punch.stop(t + 0.25);
+      }
+
+      playStepSound() {
+        if (!this.soundEnabled) return;
+        this.init();
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(130, t);
+        osc.frequency.exponentialRampToValueAtTime(35, t + 0.05);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.05);
+      }
+
+      playBuzzer() {
+        if (!this.soundEnabled) return;
+        this.init();
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, t);
+        osc.frequency.setValueAtTime(130, t + 0.15);
+        gain.gain.setValueAtTime(0.4, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.5);
+      }
+
+      playCheer() {
+        if (!this.soundEnabled) return;
+        this.init();
+        const t = this.ctx.currentTime;
+        const dur = 3.0;
+        const bufferSize = this.ctx.sampleRate * dur;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const cheer = this.ctx.createBufferSource();
+        cheer.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1100, t);
+        filter.Q.setValueAtTime(1.5, t);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.01, t);
+        gain.gain.linearRampToValueAtTime(0.45, t + 0.4);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + dur);
+
+        cheer.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        cheer.start(t);
+      }
+
+      playOlympicFanfare() {
+        if (!this.bgmEnabled) return;
+        this.init();
+        this.stopOlympicFanfare();
+
+        const t = this.ctx.currentTime + 0.05;
+        const N = {
+          G3: 196.00, A3: 220.00, B3: 246.94,
+          C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
+          C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00, C6: 1046.50
+        };
+
+        const tempo = 0.36;
+        const melody = [
+          { f: N.G3, d: 1.0 }, { f: N.C4, d: 1.0 }, { f: N.G3, d: 1.0 },
+          { f: N.C4, d: 0.5 }, { f: N.C4, d: 0.5 }, { f: N.C4, d: 1.0 },
+          { f: N.G3, d: 0.75 }, { f: N.C4, d: 0.25 },
+          { f: N.E4, d: 0.5 },  { f: N.G4, d: 1.0 },
+          { f: N.E4, d: 0.5 },  { f: N.C4, d: 1.5 },
+          { f: N.G3, d: 0.75 }, { f: N.C4, d: 0.25 },
+          { f: N.E4, d: 0.5 },  { f: N.G4, d: 1.0 },
+          { f: N.C5, d: 2.5 },
+          { f: N.C5, d: 0.5 }, { f: N.B4, d: 0.5 }, { f: N.A4, d: 0.5 }, { f: N.B4, d: 0.5 },
+          { f: N.C5, d: 1.0 }, { f: N.G4, d: 1.5 },
+          { f: N.E4, d: 0.5 }, { f: N.F4, d: 0.5 }, { f: N.G4, d: 0.5 }, { f: N.A4, d: 0.5 },
+          { f: N.G4, d: 1.0 }, { f: N.E4, d: 1.0 }, { f: N.C4, d: 2.0 }
+        ];
+
+        let currTime = t;
+        melody.forEach(note => {
+          const noteDur = note.d * tempo;
+          const osc1 = this.ctx.createOscillator();
+          const osc2 = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const filter = this.ctx.createBiquadFilter();
+
+          osc1.type = 'sawtooth';
+          osc1.frequency.setValueAtTime(note.f, currTime);
+
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(note.f * 1.003, currTime);
+
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(1400, currTime);
+          filter.frequency.linearRampToValueAtTime(2600, currTime + 0.08);
+          filter.frequency.exponentialRampToValueAtTime(1200, currTime + noteDur);
+
+          gain.gain.setValueAtTime(0.001, currTime);
+          gain.gain.linearRampToValueAtTime(0.28, currTime + 0.05);
+          gain.gain.setValueAtTime(0.24, currTime + noteDur * 0.7);
+          gain.gain.exponentialRampToValueAtTime(0.001, currTime + noteDur);
+
+          osc1.connect(filter);
+          osc2.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc1.start(currTime);
+          osc2.start(currTime);
+          osc1.stop(currTime + noteDur);
+          osc2.stop(currTime + noteDur);
+
+          this.bgmOscillators.push(osc1, osc2);
+          currTime += noteDur;
+        });
+
+        this.bgmPlaying = true;
+      }
+
+      stopOlympicFanfare() {
+        if (this.bgmOscillators.length > 0) {
+          this.bgmOscillators.forEach(osc => {
+            try { osc.stop(); } catch(e){}
+          });
+          this.bgmOscillators = [];
+        }
+        this.bgmPlaying = false;
+      }
+    }
+
+    /* 2. 遊戲狀態與變數 */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const dispTime = document.getElementById('dispTime');
+    const dispDistance = document.getElementById('dispDistance');
+    const dispSpeed = document.getElementById('dispSpeed');
+    const dispCps = document.getElementById('dispCps');
+    const dispBest = document.getElementById('dispBest');
+    const bannerText = document.getElementById('bannerText');
+    const btnStartRace = document.getElementById('btnStartRace');
+    const btnReset = document.getElementById('btnReset');
+    const touchSprintZone = document.getElementById('touchSprintZone');
+    const stageWrapper = document.getElementById('stageWrapper');
+    const btnSound = document.getElementById('btnSound');
+    const btnBgm = document.getElementById('btnBgm');
+    const historyList = document.getElementById('historyList');
+
+    const audio = new OlympicAudio();
+
+    const GameState = {
+      IDLE: 'IDLE',
+      READY: 'READY',
+      SET: 'SET',
+      RACING: 'RACING',
+      FALSE_START: 'FALSE_START',
+      FINISHED: 'FINISHED'
+    };
+
+    let state = GameState.IDLE;
+    let startTime = 0;
+    let hasStartedTimer = false;
+    let finishTime = 0;
+    let distance = 0;
+    let speed = 0;
+    let stepCount = 0;
+    let runAnimFrame = 0;
+    let animTimer = 0;
+    let particles = [];
+    let countdownTimer = null;
+    let ribbonBroken = false;
+    let personalRecords = [];
+
+    function loadRecords() {
+      try {
+        const saved = localStorage.getItem('olympic_running_records');
+        if (saved) {
+          personalRecords = JSON.parse(saved);
+          renderRecords();
+          if (personalRecords.length > 0) {
+            dispBest.textContent = personalRecords[0].time.toFixed(2) + ' 秒';
+          }
+        }
+      } catch (e) {}
+    }
+
+    function saveRecord(finalSec, finalCps = 0) {
+      const record = {
+        time: finalSec,
+        cps: finalCps,
+        date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+      personalRecords.push(record);
+      personalRecords.sort((a, b) => a.time - b.time);
+      if (personalRecords.length > 5) personalRecords = personalRecords.slice(0, 5);
+
+      try {
+        localStorage.setItem('olympic_running_records', JSON.stringify(personalRecords));
+      } catch (e) {}
+
+      renderRecords();
+      dispBest.textContent = personalRecords[0].time.toFixed(2) + ' 秒';
+    }
+
+    function renderRecords() {
+      if (personalRecords.length === 0) {
+        historyList.innerHTML = '<li style="color:#64748b; text-align:center; padding:4px;">尚無紀錄，點擊開始挑戰吧！</li>';
+        return;
+      }
+      historyList.innerHTML = personalRecords.map((r, idx) => {
+        const medal = idx === 0 ? '🥇 金牌' : idx === 1 ? '🥈 銀牌' : idx === 2 ? '🥉 銅牌' : `第 ${idx + 1} 名`;
+        return `
+          <li class="history-item ${idx === 0 ? 'best' : ''}">
+            <span>${medal}</span>
+            <span><b>${r.time.toFixed(2)} 秒</b> ${r.cps ? `<small style="color:#10b981; margin-left:4px;">(${r.cps.toFixed(1)} 次/秒)</small>` : ''} <small style="color:#64748b;">${r.date}</small></span>
+          </li>
+        `;
+      }).join('');
+    }
+
+    function showBanner(text, cssClass, autoHide = 0) {
+      bannerText.textContent = text;
+      bannerText.className = 'banner-text ' + cssClass;
+      bannerText.style.display = 'block';
+      if (autoHide > 0) {
+        setTimeout(() => {
+          if (bannerText.textContent === text) {
+            bannerText.style.display = 'none';
+          }
+        }, autoHide);
+      }
+    }
+
+    function hideBanner() {
+      bannerText.style.display = 'none';
+    }
+
+    function resetGame() {
+      if (countdownTimer) clearTimeout(countdownTimer);
+      state = GameState.IDLE;
+      startTime = 0;
+      hasStartedTimer = false;
+      distance = 0;
+      speed = 0;
+      stepCount = 0;
+      ribbonBroken = false;
+      particles = [];
+      dispTime.textContent = '0.00 秒';
+      dispDistance.textContent = '0.0 米';
+      dispSpeed.textContent = '0.0 km/h';
+      dispCps.textContent = '0.0 次/秒';
+      btnStartRace.style.display = 'inline-block';
+      btnReset.style.display = 'none';
+      btnStartRace.textContent = '🏁 開始比賽 (Ready)';
+      hideBanner();
+    }
+
+    function startRaceCountdown() {
+      audio.init();
+      audio.stopOlympicFanfare();
+      resetGame();
+
+      state = GameState.READY;
+      btnStartRace.style.display = 'none';
+      btnReset.style.display = 'inline-block';
+
+      showBanner("各就位 (ON YOUR MARKS)", "banner-ready");
+      audio.playBeep(440, 0.3);
+
+      countdownTimer = setTimeout(() => {
+        if (state !== GameState.READY) return;
+
+        state = GameState.SET;
+        showBanner("預備 (SET...)", "banner-set");
+        audio.playBeep(587, 0.35);
+
+        const gunDelay = 1400 + Math.random() * 1000;
+        countdownTimer = setTimeout(() => {
+          if (state !== GameState.SET) return;
+
+          state = GameState.RACING;
+          startTime = 0;
+          hasStartedTimer = false;
+          showBanner("💥 鳴槍！點擊螢幕狂奔！", "banner-go", 1200);
+          audio.playGunshot();
+
+        }, gunDelay);
+
+      }, 1600);
+    }
+
+    function handleSprintStep() {
+      audio.init();
+
+      if (state === GameState.SET) {
+        state = GameState.FALSE_START;
+        clearTimeout(countdownTimer);
+        showBanner("⚠️ 搶跑違規！(FALSE START)", "banner-false");
+        audio.playBuzzer();
+        setTimeout(() => {
+          resetGame();
+        }, 2200);
+        return;
+      }
+
+      if (state !== GameState.RACING) return;
+
+      const now = performance.now();
+
+      // 鳴槍後按下第一次按鍵/點擊螢幕才開始計時
+      if (!hasStartedTimer) {
+        startTime = now;
+        hasStartedTimer = true;
+      }
+
+      stepCount++;
+
+      const stepImpulse = 1.15;
+      distance += stepImpulse;
+      speed = Math.min(speed + 1.8, 13.2);
+
+      runAnimFrame = (runAnimFrame + 1) % 8;
+      createDustParticles();
+      audio.playStepSound();
+
+      touchSprintZone.classList.add('active');
+      setTimeout(() => touchSprintZone.classList.remove('active'), 50);
+
+      if (distance >= 100.0) {
+        distance = 100.0;
+        finishTime = (now - startTime) / 1000;
+        finishRace();
+      }
+    }
+
+    function finishRace() {
+      state = GameState.FINISHED;
+      ribbonBroken = true;
+      createConfetti();
+      audio.playCheer();
+      audio.playOlympicFanfare();
+
+      const finalCps = finishTime > 0 ? (stepCount / finishTime) : 0;
+      dispCps.textContent = finalCps.toFixed(1) + ' 次/秒';
+
+      let rankText = "🏅 順利完賽！";
+      if (finishTime < 9.58) {
+        rankText = "⚡ 超越博爾特！世界紀錄！";
+      } else if (finishTime <= 9.99) {
+        rankText = "🥇 奧運金牌等級！突破極限！";
+      } else if (finishTime <= 10.49) {
+        rankText = "🥈 奧運銀牌等級！頂尖國手！";
+      } else if (finishTime <= 11.20) {
+        rankText = "🥉 奧運銅牌等級！疾如旋風！";
+      } else if (finishTime <= 13.00) {
+        rankText = "🏃 體育健將！相當不錯！";
+      }
+
+      showBanner(`🏁 衝線！${finishTime.toFixed(2)} 秒\n平均: ${finalCps.toFixed(1)} 次/秒 · ${rankText}`, "banner-finish");
+      saveRecord(finishTime, finalCps);
+
+      btnReset.textContent = '🔄 再跑一次';
+      btnReset.style.display = 'inline-block';
+      btnStartRace.style.display = 'none';
+    }
+
+    function spawnRipple(x, y) {
+      const rect = touchSprintZone.getBoundingClientRect();
+      const ripple = document.createElement('div');
+      ripple.className = 'touch-ripple';
+      ripple.style.left = (x - rect.left) + 'px';
+      ripple.style.top = (y - rect.top) + 'px';
+      touchSprintZone.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 360);
+    }
+
+    function createDustParticles() {
+      const runnerScreenX = 140;
+      const runnerScreenY = 295;
+      for (let i = 0; i < 3; i++) {
+        particles.push({
+          x: runnerScreenX - 25,
+          y: runnerScreenY + 12 + Math.random() * 8,
+          vx: -(Math.random() * 2 + 1),
+          vy: -(Math.random() * 1.5 + 0.5),
+          radius: Math.random() * 4 + 2,
+          color: 'rgba(230, 126, 34, ',
+          alpha: 0.7,
+          life: 1.0,
+          decay: 0.05
+        });
+      }
+    }
+
+    function createConfetti() {
+      const colors = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#ffffff'];
+      for (let i = 0; i < 90; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: -20 - Math.random() * 80,
+          vx: (Math.random() - 0.5) * 4,
+          vy: Math.random() * 4 + 2,
+          radius: Math.random() * 5 + 3,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * Math.PI,
+          vRot: (Math.random() - 0.5) * 0.2,
+          alpha: 1.0,
+          life: 1.0,
+          decay: 0.006,
+          isConfetti: true
+        });
+      }
+    }
+
+    /* 3. 畫布渲染 */
+    function drawStadium() {
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, 140);
+      skyGrad.addColorStop(0, '#1a365d');
+      skyGrad.addColorStop(1, '#60a5fa');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, canvas.width, 140);
+
+      ctx.fillStyle = '#cbd5e1';
+      for (let lx = 40; lx < canvas.width; lx += 150) {
+        ctx.fillRect(lx, 10, 6, 40);
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.arc(lx + 3, 10, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#cbd5e1';
+      }
+
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, 50, canvas.width, 90);
+
+      const spectatorColors = ['#f87171', '#60a5fa', '#34d399', '#fbbf24', '#e879f9', '#f1f5f9'];
+      const timeMs = performance.now();
+      for (let row = 0; row < 4; row++) {
+        const y = 62 + row * 16;
+        for (let x = 8; x < canvas.width; x += 13) {
+          const cIndex = (Math.floor(x * 13 + row * 7) % spectatorColors.length);
+          ctx.fillStyle = spectatorColors[cIndex];
+          const bounce = Math.sin(timeMs * 0.006 + x) > 0.4 ? -2 : 0;
+          ctx.fillRect(x, y + bounce, 6, 6);
+        }
+      }
+
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 136, canvas.width, 22);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText("OLYMPIC GAMES 100M SPRINT", 14, 151);
+
+      const trackGrad = ctx.createLinearGradient(0, 158, 0, canvas.height);
+      trackGrad.addColorStop(0, '#c0392b');
+      trackGrad.addColorStop(1, '#962d22');
+      ctx.fillStyle = trackGrad;
+      ctx.fillRect(0, 158, canvas.width, canvas.height - 158);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 2.5;
+      const laneYs = [165, 205, 245, 285, 325, 365, 395];
+      laneYs.forEach(ly => {
+        ctx.beginPath();
+        ctx.moveTo(0, ly);
+        ctx.lineTo(canvas.width, ly);
+        ctx.stroke();
+      });
+
+      const pxPerMeter = 55;
+      const runnerScreenX = 140;
+      const cameraWorldX = distance * pxPerMeter - runnerScreenX;
+
+      for (let m = 0; m <= 100; m += 10) {
+        const markerWorldX = m * pxPerMeter;
+        const markerScreenX = markerWorldX - cameraWorldX;
+
+        if (markerScreenX >= -80 && markerScreenX <= canvas.width + 80) {
+          ctx.lineWidth = (m === 0 || m === 100) ? 5 : 2.5;
+          ctx.strokeStyle = (m === 100) ? '#f1c40f' : '#ffffff';
+          ctx.beginPath();
+          ctx.moveTo(markerScreenX, 165);
+          ctx.lineTo(markerScreenX, 395);
+          ctx.stroke();
+
+          ctx.fillStyle = (m === 100) ? '#f1c40f' : '#ffffff';
+          ctx.font = (m === 100) ? 'bold 18px sans-serif' : 'bold 13px monospace';
+          const txt = (m === 0) ? '0M' : (m === 100) ? '🏁 100M FINISH' : `${m}M`;
+          ctx.fillText(txt, markerScreenX + 6, 185);
+        }
+      }
+
+      const finishScreenX = 100 * pxPerMeter - cameraWorldX;
+      if (finishScreenX >= -40 && finishScreenX <= canvas.width + 40) {
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(finishScreenX - 3, 158, 6, 240);
+
+        if (!ribbonBroken) {
+          ctx.fillStyle = '#ff4757';
+          ctx.fillRect(finishScreenX, 275, 7, 28);
+          ctx.beginPath();
+          ctx.moveTo(finishScreenX, 285);
+          ctx.lineTo(finishScreenX - 25, 290);
+          ctx.lineTo(finishScreenX, 295);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#ff4757';
+          ctx.save();
+          ctx.translate(finishScreenX, 280);
+          ctx.rotate(0.3);
+          ctx.fillRect(-12, 0, 16, 10);
+          ctx.restore();
+        }
+      }
+    }
+
+    function drawRunner() {
+      const runnerScreenX = 140;
+      const runnerScreenY = 295;
+
+      ctx.save();
+      ctx.translate(runnerScreenX, runnerScreenY);
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, 25, 18, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (state === GameState.IDLE) {
+        drawStandingRunner();
+      } else if (state === GameState.READY) {
+        drawCrouchingRunner();
+      } else if (state === GameState.SET) {
+        drawSetRunner();
+      } else if (state === GameState.RACING && !hasStartedTimer) {
+        drawSetRunner();
+      } else {
+        drawAnimatedSprinter(runAnimFrame);
+      }
+
+      ctx.restore();
+    }
+
+    function drawStandingRunner() {
+      ctx.fillStyle = '#e0a96d';
+      ctx.fillRect(-5, 0, 4, 20);
+      ctx.fillRect(1, 0, 4, 20);
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(-7, 18, 7, 5);
+      ctx.fillRect(0, 18, 7, 5);
+      ctx.fillStyle = '#1e3799';
+      ctx.fillRect(-7, -6, 14, 9);
+      ctx.fillStyle = '#0984e3';
+      ctx.fillRect(-6, -22, 12, 16);
+      ctx.fillStyle = '#e0a96d';
+      ctx.beginPath();
+      ctx.arc(0, -29, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#2d3436';
+      ctx.fillRect(-5, -36, 10, 5);
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(-7, -32, 14, 3);
+    }
+
+    function drawCrouchingRunner() {
+      ctx.fillStyle = '#e0a96d';
+      ctx.fillRect(-10, 15, 3, 8);
+      ctx.fillRect(-3, 15, 3, 8);
+      ctx.fillRect(3, 5, 12, 6);
+      ctx.fillRect(10, 9, 5, 14);
+      ctx.fillStyle = '#0984e3';
+      ctx.fillRect(-8, 0, 14, 11);
+      ctx.fillStyle = '#e0a96d';
+      ctx.beginPath();
+      ctx.arc(-12, -2, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(-15, -4, 9, 3);
+    }
+
+    function drawSetRunner() {
+      ctx.fillStyle = '#e0a96d';
+      ctx.fillRect(-12, 13, 3, 10);
+      ctx.fillRect(-5, 13, 3, 10);
+      ctx.fillRect(5, -5, 6, 16);
+      ctx.fillRect(10, 2, 5, 20);
+      ctx.fillStyle = '#1e3799';
+      ctx.fillRect(0, -9, 12, 11);
+      ctx.fillStyle = '#0984e3';
+      ctx.fillRect(-10, -4, 14, 10);
+      ctx.fillStyle = '#e0a96d';
+      ctx.beginPath();
+      ctx.arc(-14, -6, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(-17, -8, 9, 3);
+    }
+
+    function drawAnimatedSprinter(frame) {
+      const poses = [
+        { legA: 40, legB: -45, armA: -50, armB: 45 },
+        { legA: 20, legB: -30, armA: -30, armB: 25 },
+        { legA: -10, legB: -10, armA: 0, armB: 0 },
+        { legA: -45, legB: 35, armA: 40, armB: -40 },
+        { legA: -55, legB: 50, armA: 55, armB: -50 },
+        { legA: -25, legB: 25, armA: 25, armB: -25 },
+        { legA: 5, legB: -5, armA: 0, armB: 0 },
+        { legA: 30, legB: -35, armA: -35, armB: 35 }
+      ];
+
+      const p = poses[frame % poses.length];
+
+      drawLimb(2, -2, p.legB, 20, '#c68c53', '#f39c12');
+      drawLimb(-4, -18, p.armB, 16, '#c68c53');
+
+      ctx.save();
+      ctx.rotate(0.18);
+      ctx.fillStyle = '#1e3799';
+      ctx.fillRect(-7, -4, 14, 11);
+      ctx.fillStyle = '#0984e3';
+      ctx.fillRect(-6, -24, 13, 21);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-4, -18, 9, 9);
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 7px monospace';
+      ctx.fillText("01", -2, -11);
+
+      ctx.fillStyle = '#e0a96d';
+      ctx.beginPath();
+      ctx.arc(0, -30, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#2d3436';
+      ctx.fillRect(-5, -37, 10, 5);
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(-7, -33, 14, 3);
+      ctx.fillRect(7, -33, 8, 2);
+      ctx.restore();
+
+      drawLimb(-3, -2, p.legA, 20, '#e0a96d', '#f1c40f');
+      drawLimb(-2, -18, p.armA, 16, '#e0a96d');
+    }
+
+    function drawLimb(x, y, angleDeg, length, skinColor, shoeColor = null) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate((angleDeg * Math.PI) / 180);
+      ctx.fillStyle = skinColor;
+      ctx.fillRect(-2.5, 0, 5, length);
+
+      if (shoeColor) {
+        ctx.fillStyle = shoeColor;
+        ctx.fillRect(-4, length - 4, 9, 5);
+      }
+      ctx.restore();
+    }
+
+    function drawParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= p.decay;
+
+        if (p.isConfetti) {
+          p.rotation += p.vRot;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(0, p.life);
+          ctx.fillRect(-p.radius, -p.radius / 2, p.radius * 2, p.radius);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = p.color + Math.max(0, p.life * p.alpha) + ')';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (p.life <= 0 || p.y > canvas.height + 40) {
+          particles.splice(i, 1);
+        }
+      }
+      ctx.globalAlpha = 1.0;
+    }
+
+    let lastFrameTime = performance.now();
+
+    function gameLoop(now) {
+      const dt = (now - lastFrameTime) / 1000;
+      lastFrameTime = now;
+
+      if (state === GameState.RACING) {
+        if (hasStartedTimer) {
+          const elapsed = (now - startTime) / 1000;
+          dispTime.textContent = elapsed.toFixed(2) + ' 秒';
+
+          speed = Math.max(0, speed - 3.2 * dt);
+
+          if (speed > 0) {
+            distance += speed * dt * 0.45;
+            animTimer += speed * dt;
+            if (animTimer > 0.12) {
+              runAnimFrame = (runAnimFrame + 1) % 8;
+              animTimer = 0;
+            }
+          }
+
+          if (distance >= 100.0) {
+            distance = 100.0;
+            finishTime = (now - startTime) / 1000;
+            finishRace();
+          }
+
+          const cps = elapsed > 0 ? (stepCount / elapsed) : 0;
+          dispCps.textContent = cps.toFixed(1) + ' 次/秒';
+          dispDistance.textContent = distance.toFixed(1) + ' 米';
+          dispSpeed.textContent = (speed * 3.6).toFixed(1) + ' km/h';
+        } else {
+          dispTime.textContent = '0.00 秒';
+          dispDistance.textContent = '0.0 米';
+          dispSpeed.textContent = '0.0 km/h';
+          dispCps.textContent = '0.0 次/秒';
+        }
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawStadium();
+      drawParticles();
+      drawRunner();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* 4. 觸控與點擊螢幕事件監聽 */
+    
+    // 支援巨型衝刺區多點觸控 (雙拇指交替極速連打)
+    touchSprintZone.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        handleSprintStep();
+        spawnRipple(touch.clientX, touch.clientY);
+      }
+    }, { passive: false });
+
+    // 滑鼠點擊觸控區
+    touchSprintZone.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      handleSprintStep();
+      spawnRipple(e.clientX, e.clientY);
+    });
+
+    // 點擊賽道畫布螢幕亦可衝刺
+    stageWrapper.addEventListener('touchstart', (e) => {
+      if (state === GameState.RACING || state === GameState.SET) {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          handleSprintStep();
+        }
+      }
+    }, { passive: false });
+
+    stageWrapper.addEventListener('mousedown', (e) => {
+      if (state === GameState.RACING || state === GameState.SET) {
+        e.preventDefault();
+        handleSprintStep();
+      }
+    });
+
+    // 鍵盤 '0' 支援 (電腦端)
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && (state === GameState.IDLE || state === GameState.FINISHED)) {
+        e.preventDefault();
+        startRaceCountdown();
+        return;
+      }
+
+      if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') {
+        e.preventDefault();
+        handleSprintStep();
+      }
+    });
+
+    btnStartRace.addEventListener('click', () => {
+      startRaceCountdown();
+    });
+
+    btnReset.addEventListener('click', () => {
+      resetGame();
+    });
+
+    btnSound.addEventListener('click', () => {
+      audio.soundEnabled = !audio.soundEnabled;
+      btnSound.textContent = audio.soundEnabled ? '🔊 音效: 開' : '🔇 音效: 關';
+    });
+
+    btnBgm.addEventListener('click', () => {
+      audio.bgmEnabled = !audio.bgmEnabled;
+      btnBgm.textContent = audio.bgmEnabled ? '🎵 奧運曲: 開' : '🎵 奧運曲: 關';
+      if (!audio.bgmEnabled) {
+        audio.stopOlympicFanfare();
+      }
+    });
+
+    document.body.addEventListener('touchstart', () => {
+      audio.init();
+    }, { once: true });
+
+    loadRecords();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
