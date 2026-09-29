@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>奧林匹克跑步 100M - 手機直式版 (離手觸發)</title>
+  <title>奧林匹克跑步 100M - 手機直式版 (數值校準)</title>
   <style>
     :root {
       --bg-color: #0b0f19;
@@ -246,6 +246,7 @@
       transform: scale(0.98);
     }
 
+    /* 手機專屬：巨型螢幕點擊衝刺大觸控區 */
     .touch-sprint-zone {
       position: relative;
       width: 100%;
@@ -452,8 +453,8 @@
     </div>
 
     <div class="footer-tips">
-      📱 <b>必須「點擊並離手（放開）」才算一次衝刺</b>（雙手拇指輪流快速點放最快！）<br>
-      💻 電腦亦支援鍵盤 <kbd>0</kbd> 鍵（按住放開算一次）。鳴槍後第一次離手即刻起跑計時！
+      📱 <b>手機直接狂點上方紅色區域或螢幕</b>（雙手拇指輪流交替最快！）<br>
+      💻 電腦亦可按鍵盤 <kbd>0</kbd> 鍵。鳴槍後按下第一次即刻計時！
     </div>
 
     <div class="history-card">
@@ -721,7 +722,6 @@
     let state = GameState.IDLE;
     let startTime = 0;
     let hasStartedTimer = false;
-    let lastTapTimestamp = 0;
     let finishTime = 0;
     let distance = 0;
     let speed = 0;
@@ -802,7 +802,6 @@
       state = GameState.IDLE;
       startTime = 0;
       hasStartedTimer = false;
-      lastTapTimestamp = 0;
       distance = 0;
       speed = 0;
       stepCount = 0;
@@ -844,7 +843,7 @@
           state = GameState.RACING;
           startTime = 0;
           hasStartedTimer = false;
-          showBanner("💥 鳴槍！點擊並離手狂奔！", "banner-go", 1200);
+          showBanner("💥 鳴槍！點擊螢幕狂奔！", "banner-go", 1200);
           audio.playGunshot();
 
         }, gunDelay);
@@ -852,6 +851,7 @@
       }, 1600);
     }
 
+    // 核心衝刺推進 (比例精準校準：9 次/秒 完賽約 10.6 秒)
     function handleSprintStep() {
       audio.init();
 
@@ -877,6 +877,7 @@
 
       stepCount++;
 
+      // 校準數值：步長 0.67 米，速度增益 1.5，極限速度 12.0
       const stepImpulse = 0.67;
       distance += stepImpulse;
       speed = Math.min(speed + 1.5, 12.0);
@@ -884,6 +885,9 @@
       runAnimFrame = (runAnimFrame + 1) % 8;
       createDustParticles();
       audio.playStepSound();
+
+      touchSprintZone.classList.add('active');
+      setTimeout(() => touchSprintZone.classList.remove('active'), 50);
 
       if (distance >= 100.0) {
         distance = 100.0;
@@ -1253,6 +1257,7 @@
           const elapsed = (now - startTime) / 1000;
           dispTime.textContent = elapsed.toFixed(2) + ' 秒';
 
+          // 校準阻力與滑行推進
           speed = Math.max(0, speed - 3.5 * dt);
 
           if (speed > 0) {
@@ -1290,139 +1295,37 @@
       requestAnimationFrame(gameLoop);
     }
 
-    /* 4. 觸控與點擊螢幕事件監聽 (必須離手才算一次推進) */
-    let lastTapTimestamp = 0;
-    const MIN_TAP_INTERVAL_MS = 35; // 35ms 防抖間隔（杜絕多指同時同放或巨集）
-    let isZonePressed = false;
-    let isCanvasPressed = false;
-    let isKeyPressed = false;
-
-    function trySprintStep() {
-      const now = performance.now();
-      if (now - lastTapTimestamp >= MIN_TAP_INTERVAL_MS) {
-        lastTapTimestamp = now;
-        handleSprintStep();
-        return true;
-      }
-      return false;
-    }
-
-    // --- 1. 手機專用觸控區 (Touch Sprint Zone) ---
-    // 按下接觸：僅做視覺回饋與預備犯規偵測，未離手不推進
     touchSprintZone.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      audio.init();
-
-      if (state === GameState.SET) {
-        state = GameState.FALSE_START;
-        clearTimeout(countdownTimer);
-        showBanner("⚠️ 搶跑違規！(FALSE START)", "banner-false");
-        audio.playBuzzer();
-        setTimeout(() => resetGame(), 2200);
-        return;
-      }
-
-      isZonePressed = true;
-      touchSprintZone.classList.add('active');
-      if (e.changedTouches.length > 0) {
-        spawnRipple(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        handleSprintStep();
+        spawnRipple(touch.clientX, touch.clientY);
       }
     }, { passive: false });
 
-    // 離手放開 (touchend)：嚴格在此刻才觸發一次推進！
-    touchSprintZone.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      touchSprintZone.classList.remove('active');
-      if (isZonePressed) {
-        isZonePressed = false;
-        trySprintStep();
-      }
-    }, { passive: false });
-
-    touchSprintZone.addEventListener('touchcancel', () => {
-      isZonePressed = false;
-      touchSprintZone.classList.remove('active');
-    });
-
-    // 滑鼠點擊觸控區 (MouseDown 按下 -> MouseUp 放開離手才算)
     touchSprintZone.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      audio.init();
-
-      if (state === GameState.SET) {
-        state = GameState.FALSE_START;
-        clearTimeout(countdownTimer);
-        showBanner("⚠️ 搶跑違規！(FALSE START)", "banner-false");
-        audio.playBuzzer();
-        setTimeout(() => resetGame(), 2200);
-        return;
-      }
-
-      isZonePressed = true;
-      touchSprintZone.classList.add('active');
+      handleSprintStep();
       spawnRipple(e.clientX, e.clientY);
     });
 
-    window.addEventListener('mouseup', () => {
-      if (isZonePressed) {
-        isZonePressed = false;
-        touchSprintZone.classList.remove('active');
-        trySprintStep();
-      }
-      if (isCanvasPressed) {
-        isCanvasPressed = false;
-        trySprintStep();
-      }
-    });
-
-    // --- 2. 賽道畫布螢幕點擊 (Screen Tap: 觸碰按下 -> 離手放開才算) ---
     stageWrapper.addEventListener('touchstart', (e) => {
-      audio.init();
-      if (state === GameState.SET) {
+      if (state === GameState.RACING || state === GameState.SET) {
         e.preventDefault();
-        state = GameState.FALSE_START;
-        clearTimeout(countdownTimer);
-        showBanner("⚠️ 搶跑違規！(FALSE START)", "banner-false");
-        audio.playBuzzer();
-        setTimeout(() => resetGame(), 2200);
-        return;
-      }
-      if (state === GameState.RACING) {
-        e.preventDefault();
-        isCanvasPressed = true;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          handleSprintStep();
+        }
       }
     }, { passive: false });
-
-    stageWrapper.addEventListener('touchend', (e) => {
-      if (isCanvasPressed) {
-        e.preventDefault();
-        isCanvasPressed = false;
-        trySprintStep();
-      }
-    }, { passive: false });
-
-    stageWrapper.addEventListener('touchcancel', () => {
-      isCanvasPressed = false;
-    });
 
     stageWrapper.addEventListener('mousedown', (e) => {
-      audio.init();
-      if (state === GameState.SET) {
+      if (state === GameState.RACING || state === GameState.SET) {
         e.preventDefault();
-        state = GameState.FALSE_START;
-        clearTimeout(countdownTimer);
-        showBanner("⚠️ 搶跑違規！(FALSE START)", "banner-false");
-        audio.playBuzzer();
-        setTimeout(() => resetGame(), 2200);
-        return;
-      }
-      if (state === GameState.RACING) {
-        e.preventDefault();
-        isCanvasPressed = true;
+        handleSprintStep();
       }
     });
 
-    // --- 3. 鍵盤 '0' 支援 (電腦端：按鍵鬆開 KeyUp 離手才算一次，杜絕長按連發) ---
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space' && (state === GameState.IDLE || state === GameState.FINISHED)) {
         e.preventDefault();
@@ -1432,32 +1335,7 @@
 
       if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') {
         e.preventDefault();
-        audio.init();
-
-        if (state === GameState.SET) {
-          state = GameState.FALSE_START;
-          clearTimeout(countdownTimer);
-          showBanner("⚠️ 搶跑違規！(FALSE START)", "banner-false");
-          audio.playBuzzer();
-          setTimeout(() => resetGame(), 2200);
-          return;
-        }
-
-        if (state === GameState.RACING) {
-          isKeyPressed = true;
-          touchSprintZone.classList.add('active');
-        }
-      }
-    });
-
-    window.addEventListener('keyup', (e) => {
-      if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') {
-        e.preventDefault();
-        touchSprintZone.classList.remove('active');
-        if (isKeyPressed) {
-          isKeyPressed = false;
-          trySprintStep();
-        }
+        handleSprintStep();
       }
     });
 
