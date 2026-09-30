@@ -380,7 +380,6 @@
   </style>
 </head>
 <body>
-
   <div class="game-container">
     <header class="game-header">
       <div class="title-box">
@@ -442,7 +441,7 @@
         <div class="touch-half">
           <div class="icon-thumb">👆</div>
           <div>左手 / 左拇指</div>
-          <span class="touch-badge">點擊螢幕</span>
+          <span class="touch-badge">點擊並放開</span>
         </div>
         <div class="touch-half">
           <div class="icon-thumb">👆</div>
@@ -453,8 +452,8 @@
     </div>
 
     <div class="footer-tips">
-      📱 <b>手機直接狂點上方紅色區域或螢幕</b>（雙手拇指輪流交替最快！）<br>
-      💻 電腦亦可按鍵盤 <kbd>0</kbd> 鍵。鳴槍後按下第一次即刻計時！
+      📱 <b>手機直接狂點上方紅色區域或螢幕</b>（手指離開才算一次，雙手交替最快！）<br>
+      💻 電腦亦可按鍵盤 <kbd>0</kbd> 鍵。鳴槍後放開按鍵即刻計時！
     </div>
 
     <div class="history-card">
@@ -733,6 +732,12 @@
     let ribbonBroken = false;
     let personalRecords = [];
 
+    // 新增防連發與防多點觸控的控制變數
+    const activeTouches = new Set();
+    let isMouseDownSprintZone = false;
+    let isMouseDownStage = false;
+    let isZeroKeyPressed = false;
+
     function loadRecords() {
       try {
         const saved = localStorage.getItem('olympic_running_records');
@@ -807,6 +812,13 @@
       stepCount = 0;
       ribbonBroken = false;
       particles = [];
+      
+      // 清空觸控狀態
+      activeTouches.clear();
+      isMouseDownSprintZone = false;
+      isMouseDownStage = false;
+      isZeroKeyPressed = false;
+
       dispTime.textContent = '0.00 秒';
       dispDistance.textContent = '0.0 米';
       dispSpeed.textContent = '0.0 km/h';
@@ -1295,37 +1307,115 @@
       requestAnimationFrame(gameLoop);
     }
 
+    // --- 事件綁定區域 (防作弊、防連發機制) ---
+
+    // 1. 衝刺控制區域 (touchSprintZone)
     touchSprintZone.addEventListener('touchstart', (e) => {
       e.preventDefault();
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        handleSprintStep();
-        spawnRipple(touch.clientX, touch.clientY);
-      }
-    }, { passive: false });
-
-    touchSprintZone.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      handleSprintStep();
-      spawnRipple(e.clientX, e.clientY);
-    });
-
-    stageWrapper.addEventListener('touchstart', (e) => {
-      if (state === GameState.RACING || state === GameState.SET) {
-        e.preventDefault();
-        for (let i = 0; i < e.changedTouches.length; i++) {
-          handleSprintStep();
+        // 限制最多兩根手指 (左右交替)，防止多指作弊
+        if (activeTouches.size < 2) {
+          activeTouches.add(touch.identifier);
+          spawnRipple(touch.clientX, touch.clientY); // 按下給予視覺回饋
         }
       }
     }, { passive: false });
 
-    stageWrapper.addEventListener('mousedown', (e) => {
-      if (state === GameState.RACING || state === GameState.SET) {
-        e.preventDefault();
-        handleSprintStep();
+    touchSprintZone.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        // 只有在許可清單內的手指離開，才算有效推進
+        if (activeTouches.has(touch.identifier)) {
+          activeTouches.delete(touch.identifier);
+          handleSprintStep();
+        }
       }
     });
 
+    touchSprintZone.addEventListener('touchcancel', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        activeTouches.delete(touch.identifier);
+      }
+    });
+
+    touchSprintZone.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (!isMouseDownSprintZone) {
+        isMouseDownSprintZone = true;
+        spawnRipple(e.clientX, e.clientY);
+      }
+    });
+
+    touchSprintZone.addEventListener('mouseup', (e) => {
+      e.preventDefault();
+      if (isMouseDownSprintZone) {
+        isMouseDownSprintZone = false;
+        handleSprintStep(); // 滑鼠放開才算一次
+      }
+    });
+
+    touchSprintZone.addEventListener('mouseleave', (e) => {
+      isMouseDownSprintZone = false;
+    });
+
+    // 2. 畫布區域 (stageWrapper)
+    stageWrapper.addEventListener('touchstart', (e) => {
+      if (state === GameState.RACING || state === GameState.SET) {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const touch = e.changedTouches[i];
+          if (activeTouches.size < 2) {
+            activeTouches.add(touch.identifier);
+          }
+        }
+      }
+    }, { passive: false });
+
+    stageWrapper.addEventListener('touchend', (e) => {
+      if (state === GameState.RACING || state === GameState.SET) {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const touch = e.changedTouches[i];
+          if (activeTouches.has(touch.identifier)) {
+            activeTouches.delete(touch.identifier);
+            handleSprintStep();
+          }
+        }
+      }
+    });
+
+    stageWrapper.addEventListener('touchcancel', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        activeTouches.delete(touch.identifier);
+      }
+    });
+
+    stageWrapper.addEventListener('mousedown', (e) => {
+      if (state === GameState.RACING || state === GameState.SET) {
+        e.preventDefault();
+        isMouseDownStage = true;
+      }
+    });
+
+    stageWrapper.addEventListener('mouseup', (e) => {
+      if (state === GameState.RACING || state === GameState.SET) {
+        e.preventDefault();
+        if (isMouseDownStage) {
+          isMouseDownStage = false;
+          handleSprintStep();
+        }
+      }
+    });
+
+    stageWrapper.addEventListener('mouseleave', (e) => {
+      isMouseDownStage = false;
+    });
+
+    // 3. 鍵盤控制 (防止長按連發)
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space' && (state === GameState.IDLE || state === GameState.FINISHED)) {
         e.preventDefault();
@@ -1334,11 +1424,24 @@
       }
 
       if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') {
-        e.preventDefault();
-        handleSprintStep();
+        e.preventDefault(); // 阻止系統原生長按連發
+        if (!isZeroKeyPressed) {
+          isZeroKeyPressed = true;
+        }
       }
     });
 
+    window.addEventListener('keyup', (e) => {
+      if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') {
+        e.preventDefault();
+        if (isZeroKeyPressed) {
+          isZeroKeyPressed = false;
+          handleSprintStep(); // 鍵盤放開才算一次
+        }
+      }
+    });
+
+    // --- 其他 UI 控制事件 ---
     btnStartRace.addEventListener('click', () => {
       startRaceCountdown();
     });
